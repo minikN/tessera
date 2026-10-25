@@ -19,6 +19,12 @@ mkFeature {
       example = { font-size = 14; cursor-style = "bar"; };
       description = "Extra settings merged into `programs.ghostty.settings` (override defaults).";
     };
+    keybindings = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      default = { };
+      example = { "ctrl+shift+t" = "new_tab"; };
+      description = "Keybindings (trigger = action) added to Ghostty's defaults.";
+    };
   };
 
   globals = { config, ... }: {
@@ -60,6 +66,9 @@ mkFeature {
           shell-integration-features = "ssh-env,ssh-terminfo";
 
           font-size = mono.size;
+        } // lib.optionalAttrs (config.features.ghostty.keybindings != { }) {
+          keybind = lib.mapAttrsToList (trigger: action: "${trigger}=${action}")
+            config.features.ghostty.keybindings;
         } // config.features.ghostty.settings;
 
         themes.tessera = with hex; {
