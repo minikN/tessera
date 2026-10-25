@@ -1,4 +1,4 @@
-{ lib, mkFeature, ... }:
+{ lib, mkFeature, tessera, ... }:
 
 mkFeature {
   name = "sway";
@@ -6,6 +6,7 @@ mkFeature {
   options = { config, pkgs, ... }:
     let
       inherit (lib) mkEnableOption mkOption mkPackageOption types;
+      cfg = config.features.sway;
     in
     {
       package = mkPackageOption pkgs "sway" { };
@@ -29,10 +30,11 @@ mkFeature {
         description = "Extra fields merged into sway's `bar` block.";
       };
 
-      extraKeybindings = mkOption {
-        type = types.attrsOf types.str;
+      keybindings = mkOption {
+        type = tessera.types.keybindings types.str;
         default = { };
-        description = "Extra keybindings (merged on top of defaults).";
+        apply = f: f { inherit (cfg) modifier left right up down; inherit (config.globals) apps; };
+        description = "Keybindings merged over the defaults: an attrset, or a function of `{ modifier, left, right, up, down, apps, ... }`.";
       };
 
       extraConfig = mkOption {
@@ -185,7 +187,7 @@ mkFeature {
               // lib.optionalAttrs cfg.useGlobalBar {
                 "${cfg.modifier}+b" = "bar mode toggle";
               }
-              // cfg.extraKeybindings
+              // cfg.keybindings
             );
           }
           cfg.extraConfig;
