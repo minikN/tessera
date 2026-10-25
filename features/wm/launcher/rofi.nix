@@ -139,23 +139,51 @@ mkFeature {
   globals = { config, pkgs, ... }:
     let
       cfg = config.features.rofi;
-      rofiPassPkg = if config.globals.wayland then pkgs.rofi-pass-wayland else pkgs.rofi-pass;
+      pass = config.features.password-store.package;
+      env = ''
+        export PASSWORD_STORE_DIR="${config.features.password-store.storeDir}"
+        export GNUPGHOME="${config.features.gnupg.storeDir}"
+      '';
+
+      ## Wayland
+      tessen = pkgs.writeShellScriptBin "tessen" ''
+        ${env}
+        export PATH="${lib.makeBinPath [ cfg.package ]}:$PATH"
+        exec ${pkgs.tessen.override { inherit pass; }}/bin/tessen --pass pass --dmenu rofi "$@"
+      '';
+
+      ## X11
+      rofiPass = pkgs.writeShellApplication {
+        name = "rofi-pass";
+        runtimeInputs = with pkgs; [ cfg.package pass xclip findutils gnugrep gnused coreutils ];
+        text = ''
+          ${env}
+          menu () { rofi -dmenu -i -no-auto-select -p "$1"; }
+          field () {
+            pass show "$entry" | grep -iE "^($1):" | head -n1 | sed 's/^[^:]*:[[:space:]]*//' || true
+          }
+
+          entry=$(cd "$PASSWORD_STORE_DIR" && find . -type f -name '*.gpg' \
+            | sed -e 's|^\./||' -e 's/\.gpg$//' | sort | menu pass) || exit 0
+          action=$(printf '%s\n' 'Copy password' 'Copy username' 'Copy URL' 'Copy OTP' \
+            | menu "$entry") || exit 0
+
+          case "$action" in
+            'Copy password') pass show -c "$entry" ;;
+            'Copy username') field 'username|user|login' | xclip -selection clipboard ;;
+            'Copy URL')      field 'url|website|site' | xclip -selection clipboard ;;
+            'Copy OTP')      pass otp -c "$entry" ;;
+          esac
+        '';
+      };
     in
     {
       apps.launcher = lib.mkIf cfg.enableLauncher
         (lib.mkForce "${cfg.package}/bin/rofi -show drun");
 
-      apps.passwordManager = lib.mkIf cfg.enablePasswordManager (
-        let
-          rofiPassExec = pkgs.writeShellScriptBin "rofi-pass" ''
-            export PATH="$PATH:${lib.makeBinPath [ pkgs.qrencode ]}"
-            export PASSWORD_STORE_DIR="${config.features.password-store.storeDir}"
-            export GNUPGHOME="${config.features.gnupg.storeDir}"
-            exec "${rofiPassPkg}/bin/rofi-pass" "$@"
-          '';
-        in
-        lib.mkForce "${rofiPassExec}/bin/rofi-pass"
-      );
+      apps.passwordManager = lib.mkIf cfg.enablePasswordManager (lib.mkForce (
+        if config.globals.wayland then "${tessen}/bin/tessen" else "${rofiPass}/bin/rofi-pass"
+      ));
     };
 
   home = { config, pkgs, ... }:
@@ -174,52 +202,6 @@ mkFeature {
 
       (lib.mkIf cfg.enablePinentry {
         services.gpg-agent.pinentry.package = lib.mkForce pkgs.pinentry-rofi;
-      })
-
-      (lib.mkIf cfg.enablePasswordManager {
-        xdg.configFile."rofi-pass/config".text =
-          let
-            backend = if config.globals.wayland then "wtype" else "xdotool";
-            clipboardBackend = if config.globals.wayland then "wl-clipboard" else "xclip";
-            imageViewer =
-              if config.globals.wayland
-              then "${pkgs.swayimg}/bin/swayimg"
-              else "${pkgs.feh}/bin/feh";
-          in
-          ''
-            _image_viewer () {
-              ${imageViewer} -
-            }
-            _pwgen () {
-              ${pkgs.pwgen}/bin/pwgen -y "$@"
-            }
-            _rofi () {
-              ${config.globals.apps.launcher} -i -no-auto-select "$@"
-            }
-
-            default_do='copyMenu'
-
-            autotype="Alt+1"
-            type_user="Alt+2"
-            type_pass="Alt+3"
-            open_url="Alt+4"
-            copy_name="Alt+u"
-            copy_url="Alt+l"
-            copy_pass="Alt+y"
-            insert_pass="Alt+Y"
-            show="Alt+o"
-            copy_entry="Alt+2"
-            type_entry="Alt+1"
-            copy_menu="Alt+c"
-            action_menu="Alt+a"
-            type_menu="Alt+t"
-            help="Alt+h"
-            switch="Alt+x"
-
-            clip=both
-            backend=${backend}
-            clipboard_backend=${clipboardBackend}
-          '';
       })
     ];
 }
