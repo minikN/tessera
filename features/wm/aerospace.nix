@@ -1,4 +1,4 @@
-{ lib, mkFeature, ... }:
+{ lib, mkFeature, tessera, ... }:
 
 mkFeature {
   name = "aerospace";
@@ -20,15 +20,11 @@ mkFeature {
       up = mkOption { type = types.str; default = "up"; description = "Key for the up orientation."; };
       down = mkOption { type = types.str; default = "down"; description = "Key for the down orientation."; };
 
-      extraKeybindings = mkOption {
-        type = types.either (types.functionTo types.attrs) types.attrs;
+      keybindings = mkOption {
+        type = tessera.types.keybindings (types.either types.str (types.listOf types.str));
         default = { };
-        ## Accepts an attrs, or a function of `apps // { modifier left right up down }`.
-        apply = x:
-          if builtins.isFunction x
-          then x (config.globals.apps // { inherit (cfg) modifier left right up down; })
-          else x;
-        description = "Extra AeroSpace keybindings (attrs, or a function of the launcher apps + geometry keys).";
+        apply = f: f { inherit (cfg) modifier left right up down; inherit (config.globals) apps; };
+        description = "Keybindings merged over the defaults: an attrset, or a function of `{ modifier, left, right, up, down, apps, ... }`.";
       };
 
       extraConfig = mkOption {
@@ -138,7 +134,7 @@ mkFeature {
 
                 "${modifier}-shift-c" = "reload-config";
               }
-              // extraKeybindings
+              // keybindings
             );
 
           mode.resize.binding = {
