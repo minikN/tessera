@@ -6,13 +6,14 @@ let
   mkSchemeAttrs = import ./mk-scheme-attrs.nix { inherit lib; };
   mkElispConfig = import ./mk-elisp-config.nix { inherit lib; };
   discover = import ./discover.nix { inherit lib; };
+  types = import ./types.nix { inherit lib; };
   mkFlake = import ./mk-flake.nix {
-    inherit lib mkFeature mkHost mkElispConfig;
+    inherit lib types mkFeature mkHost mkElispConfig;
     tesseraInputs = inputs;
     inherit (discover) discoverFeatures discoverHosts;
   };
 in
 {
-  inherit mkFeature mkHost mkSchemeAttrs mkElispConfig mkFlake;
+  inherit mkFeature mkHost mkSchemeAttrs mkElispConfig mkFlake types;
   inherit (discover) discoverFeatures discoverHosts;
 }
