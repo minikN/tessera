@@ -10,6 +10,12 @@ mkFeature {
       default = "";
       description = "Extra lines appended to .zprofile.";
     };
+    keybindings = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      default = { };
+      example = { "^[[A" = "history-search-backward"; };
+      description = "Keybindings (key sequence = widget), set with `bindkey`.";
+    };
   };
 
   globals = { config, ... }: {
@@ -37,6 +43,10 @@ mkFeature {
       dotDir = "${config.xdg.configHome}/zsh";
       history.path = "${config.xdg.stateHome}/zsh/history";
       profileExtra = config.features.zsh.extraConfig;
+      initContent = lib.mkIf (config.features.zsh.keybindings != { })
+        (lib.concatStringsSep "\n" (lib.mapAttrsToList
+          (key: widget: "bindkey ${lib.escapeShellArg key} ${widget}")
+          config.features.zsh.keybindings));
     };
   };
 }
