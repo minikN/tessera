@@ -128,6 +128,12 @@ mkFeature {
         default = enabled;
         description = "Use this feature as the global password manager.";
       };
+      keybindings = mkOption {
+        type = types.attrsOf types.str;
+        default = { };
+        example = { kb-row-select = "Tab"; };
+        description = "Keybindings (rofi's `kb-*` settings) merged over the defaults.";
+      };
     };
 
   globals = { config, pkgs, ... }:
@@ -161,7 +167,7 @@ mkFeature {
         programs.rofi = {
           enable = true;
           package = cfg.package;
-          extraConfig = mkSettings config;
+          extraConfig = mkSettings config // cfg.keybindings;
           theme = mkTheme config;
         };
       }
