@@ -10,6 +10,12 @@ mkFeature {
       default = "";
       description = "Extra lines appended to .bash_profile.";
     };
+    keybindings = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      default = { };
+      example = { "\\e[A" = "history-search-backward"; };
+      description = "Readline keybindings (key sequence = function), written to ~/.inputrc.";
+    };
   };
 
   globals = { config, ... }: {
@@ -39,6 +45,11 @@ mkFeature {
         [[ $- == *i* && -r ${pkgs.bash-completion}/etc/profile.d/bash_completion.sh ]] && \
           source ${pkgs.bash-completion}/etc/profile.d/bash_completion.sh
       '';
+    };
+
+    programs.readline = lib.mkIf (config.features.bash.keybindings != { }) {
+      enable = true;
+      bindings = config.features.bash.keybindings;
     };
 
     home.activation.createBashHistoryDir =
