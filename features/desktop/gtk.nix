@@ -2,6 +2,7 @@
 
 mkFeature {
   name = "gtk";
+  platforms = [ "home" "nixos" ];
 
   options = { config, pkgs, ... }:
     let
