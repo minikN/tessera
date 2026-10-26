@@ -115,16 +115,19 @@ mkFeature {
       };
       enableLauncher = mkOption {
         type = types.bool;
+        defaultText = lib.literalExpression "config.features.rofi.enable";
         default = enabled;
         description = "Use this feature as the global launcher.";
       };
       enablePinentry = mkOption {
         type = types.bool;
+        defaultText = lib.literalExpression "config.features.rofi.enable";
         default = enabled;
         description = "Use this feature as the global pinentry.";
       };
       enablePasswordManager = mkOption {
         type = types.bool;
+        defaultText = lib.literalExpression "config.features.rofi.enable";
         default = enabled;
         description = "Use this feature as the global password manager.";
       };
