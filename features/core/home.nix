@@ -7,11 +7,54 @@ mkFeature {
   name = "home";
   enableByDefault = true;
 
+  doc = {
+    summary = "Ties the user's login session to the apps other features provide.";
+    description = ''
+      Connects the system and the user's home-manager configuration. It is
+      enabled by default and usually needs no configuration: it picks up
+      whatever other features registered as the shell, window manager and
+      editor.
+
+      - **Login shell:** the shell in `globals.apps.shell` (set by e.g. the
+        zsh feature) becomes the user's login shell and is added to the
+        system's allowed shells.
+      - **Editor:** `globals.apps.editor` (set by e.g. the Emacs feature) is
+        exported as `$EDITOR`.
+      - **home-manager command:** installed for home-only switches
+        (`home-manager switch --flake .#<host>`).
+    '';
+    nixos = ''
+      **Window manager autostart:** with `autostartWmOnTTY` set, logging in
+      on that TTY starts the window manager in `globals.apps.wm` instead of
+      a shell.
+
+      ```nix
+      features = {
+        sway.enable = true;
+        home.autostartWmOnTTY = "/dev/tty1";
+      };
+      ```
+    '';
+    darwin = ''
+      - **Login shell:** Nix cannot change the login shell of an existing
+        macOS user, so a launchd daemon runs `chsh` as root on every
+        activation. Without a shell feature it falls back to `/bin/zsh`.
+      - **Applications:** apps from home-manager are copied to
+        `~/Applications/Home Manager Apps`, so Spotlight and the Dock find
+        them.
+      - **Environment for GUI apps:** a launchd agent hands the login
+        shell's `PATH` and home-manager's session variables to launchd, so
+        apps started from the Dock or Spotlight see the same environment as
+        a terminal.
+    '';
+  };
+
   options = {
     autostartWmOnTTY = mkOption {
       type = types.nullOr types.str;
       default = null;
-      description = "exec the configured WM on this tty at login (NixOS).";
+      example = "/dev/tty1";
+      description = "TTY on which logging in starts the window manager in `globals.apps.wm` (NixOS only); `null` disables autostart.";
     };
   };
 
