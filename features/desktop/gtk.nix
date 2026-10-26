@@ -24,6 +24,7 @@ mkFeature {
       defaultThemes = mkOption {
         type = types.attrsOf themeModule;
         description = "Built-in light/dark GTK themes (consumed by `theme` default).";
+        defaultText = lib.literalExpression ''{ light = { name = "adw-gtk3"; package = pkgs.adw-gtk3; }; dark = { name = "adw-gtk3-dark"; package = pkgs.adw-gtk3; }; }'';
         default = {
           light = { name = "adw-gtk3";      package = pkgs.adw-gtk3; };
           dark  = { name = "adw-gtk3-dark"; package = pkgs.adw-gtk3; };
@@ -33,18 +34,21 @@ mkFeature {
       theme = mkOption {
         type = themeModule;
         description = "Active GTK theme; defaults from `defaultThemes` by `theme.polarity`.";
+        defaultText = lib.literalExpression "config.features.gtk.defaultThemes.\${config.features.theme.polarity}";
         default = config.features.gtk.defaultThemes.${config.features.theme.polarity};
       };
 
       iconTheme = mkOption {
         type = themeModule;
         description = "Icon theme.";
+        defaultText = lib.literalExpression ''{ name = "Adwaita"; package = pkgs.adwaita-icon-theme; }'';
         default = { name = "Adwaita"; package = pkgs.adwaita-icon-theme; };
       };
 
       cursorTheme = mkOption {
         type = themeModule;
         description = "Cursor theme.";
+        defaultText = lib.literalMD "`Bibata-Modern-Classic` (dark polarity) or `Bibata-Modern-Ice` (light) from `pkgs.bibata-cursors`";
         default = {
           name = "Bibata-Modern-${if config.features.theme.polarity == "dark" then "Classic" else "Ice"}";
           package = pkgs.bibata-cursors;
