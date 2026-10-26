@@ -7,6 +7,13 @@
 , darwin ? null
 , globals ? null
 , enableByDefault ? false
+## [ "home" "nixos" "darwin" ] - optional. Only set where it can't be derived automatically
+, platforms ? null
+## Optional. Only set if there's a dependency that can't be derived by the name.
+## E.g. `emacs.completion` has a derived dependency on `emacs`
+, requires ? [ ]
+## { summary; description; nixos; darwin; }
+, doc ? null
 , ...
 }:
 
@@ -17,6 +24,41 @@ let
   optionPath = [ "features" ] ++ fname;
   enablePath = optionPath ++ [ "enable" ];
   niceName = concatStringsSep "." fname;
+
+  requiredNames = lib.optional (builtins.length fname > 1) (lib.init fname)
+    ++ map lib.toList requires;
+
+  ## Whether the feature works on `platform`
+  supports = platform: { config, options, pkgs, ... }:
+    let
+      opts = getAttrFromPath optionPath options;
+      hasBlock = {
+        home = home != null;
+        nixos = nixos != null || home != null;
+        darwin = darwin != null || home != null;
+      }.${platform};
+      packageAvailable = !(opts ? package)
+        || lib.meta.availableOn pkgs.stdenv.hostPlatform (getAttrFromPath (optionPath ++ [ "package" ]) config);
+    in
+    hasBlock && packageAvailable && (platforms == null || builtins.elem platform platforms);
+
+  ## Adds `platform` and `requires` assertions for a feature
+  checks = platform: args@{ config, options, ... }:
+    let
+      enabled = getAttrFromPath enablePath config;
+      explicit = (getAttrFromPath enablePath options).highestPrio < 1500;  # set, not just the default
+      platformName = { nixos = "NixOS"; darwin = "macOS"; }.${platform};
+    in
+    [{
+      assertion = !(enabled && explicit) || supports platform args;
+      message = "features.${niceName} is not available on ${platformName}.";
+    }]
+    ++ map
+      (required: {
+        assertion = !enabled || getAttrFromPath ([ "features" ] ++ required ++ [ "enable" ]) config;
+        message = "features.${niceName} requires features.${concatStringsSep "." required} to be enabled.";
+      })
+      requiredNames;
 
   callBlock = block: args:
     if builtins.isFunction block then block args else block;
@@ -49,7 +91,7 @@ let
     };
 in
 {
-  inherit name commonModule;
+  inherit name doc globals platforms requiredNames supports checks commonModule;
   nixosModule = if nixos == null then null else mkBody nixos;
   darwinModule = if darwin == null then null else mkBody darwin;
   homeModule = if home == null then null else mkBody home;
