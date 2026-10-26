@@ -7,6 +7,7 @@ let
   mkElispConfig = import ./mk-elisp-config.nix { inherit lib; };
   discover = import ./discover.nix { inherit lib; };
   types = import ./types.nix { inherit lib; };
+  setsOf = import ./sets.nix { inherit lib; };
   mkFlake = import ./mk-flake.nix {
     inherit lib types mkFeature mkHost mkElispConfig;
     tesseraInputs = inputs;
@@ -14,6 +15,6 @@ let
   };
 in
 {
-  inherit mkFeature mkHost mkSchemeAttrs mkElispConfig mkFlake types;
+  inherit mkFeature mkHost mkSchemeAttrs mkElispConfig mkFlake types setsOf;
   inherit (discover) discoverFeatures discoverHosts;
 }
