@@ -37,6 +37,7 @@ mkFeature {
       scheme = mkOption {
         type = types.attrsOf types.str;
         apply = mkSchemeAttrs;
+        defaultText = lib.literalMD "The built-in light or dark scheme, following `polarity`";
         default = rawSchemes.${config.features.theme.polarity};
         description = "Base16 scheme (plain hex; `scheme.withHashtag.*` exposes the `#`-prefixed form).";
       };
