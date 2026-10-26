@@ -19,12 +19,14 @@ mkFeature {
     {
       capitalizeUserDirs = mkOption {
         type = types.bool;
+        defaultText = lib.literalMD "`true` on macOS, `false` on Linux";
         default = config.globals.platform == "darwin";
         description = "Capitalize XDG user-dir basenames (defaults true on darwin).";
       };
 
       baseDirs = mkOption {
         description = "XDG base directories; forced into home-manager's xdg.*Home.";
+        defaultText = lib.literalMD "`~/.config`, `~/.local/share`, `~/.cache` and `~/.local/state` in the user's home directory";
         default = {
           configHome = "${home}/.config";
           dataHome = "${home}/.local/share";
@@ -44,6 +46,7 @@ mkFeature {
       userDirs = mkOption {
         type = types.attrsOf (types.nullOr types.str);
         description = "XDG user dirs (null entries omitted).";
+        defaultText = lib.literalMD "`documents`, `downloads`, `music`, `pictures`, `public` and `videos` in the user's home directory (capitalized with `capitalizeUserDirs`); `desktop` and `templates` unset";
         default = {
           desktop = null;
           documents = dir "documents";
