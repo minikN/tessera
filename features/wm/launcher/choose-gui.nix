@@ -12,11 +12,13 @@ mkFeature {
       package = mkPackageOption pkgs "choose-gui" { };
       enableLauncher = mkOption {
         type = types.bool;
+        defaultText = lib.literalExpression "config.features.choose-gui.enable";
         default = enabled;
         description = "Use this feature as the global launcher.";
       };
       enablePasswordManager = mkOption {
         type = types.bool;
+        defaultText = lib.literalExpression "config.features.choose-gui.enable";
         default = enabled;
         description = "Use this feature as the global password manager.";
       };
