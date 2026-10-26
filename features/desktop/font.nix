@@ -30,6 +30,7 @@ mkFeature {
         monospace = mkOption {
           type = fontModule;
           description = "Monospace font.";
+          defaultText = lib.literalExpression ''{ name = "Iosevka Nerd Font Mono"; package = pkgs.nerd-fonts.iosevka; size = 15; }'';
           default = {
             name = "Iosevka Nerd Font Mono";
             package = pkgs.nerd-fonts.iosevka;
@@ -39,6 +40,7 @@ mkFeature {
         serif = mkOption {
           type = fontModule;
           description = "Serif font.";
+          defaultText = lib.literalExpression ''{ name = "IBM Plex Sans"; package = pkgs.ibm-plex; size = 11; }'';
           default = {
             name = "IBM Plex Sans";
             package = pkgs.ibm-plex;
@@ -48,6 +50,7 @@ mkFeature {
         sans = mkOption {
           type = fontModule;
           description = "Sans-serif font.";
+          defaultText = lib.literalExpression "config.features.font.fonts.serif";
           default = config.features.font.fonts.serif;
         };
         unicode = mkOption {
@@ -55,6 +58,7 @@ mkFeature {
           description = "Unicode / emoji font.";
           ## On darwin use Apple Color Emoji; noto-fonts-color-emoji's
           ## afdko build is broken on aarch64-darwin.
+          defaultText = lib.literalMD "Apple Color Emoji (shipped with macOS) on macOS, Noto Color Emoji (`pkgs.noto-fonts-color-emoji`) on Linux; size 11";
           default =
             if config.globals.platform == "darwin"
             then { name = "Apple Color Emoji"; package = null; size = 11; }
