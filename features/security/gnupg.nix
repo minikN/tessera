@@ -22,6 +22,7 @@ mkFeature {
 
       pinentryPackage = mkOption {
         type = types.nullOr types.package;
+        defaultText = lib.literalMD "`pkgs.pinentry_mac` on macOS, `pkgs.pinentry-qt` on Linux";
         default =
           if config.globals.platform == "darwin"
           then pkgs.pinentry_mac
@@ -31,6 +32,7 @@ mkFeature {
 
       storeDir = mkOption {
         type = types.str;
+        defaultText = lib.literalExpression ''"''${config.features.user.homeDirectory}/.gnupg"'';
         default = "${config.features.user.homeDirectory}/.gnupg";
         description = "GNUPGHOME / programs.gpg.homedir. Migrate keyring before changing.";
       };
