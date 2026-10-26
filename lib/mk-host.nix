@@ -41,6 +41,10 @@ let
       if builtins.isFunction hostFeatures then hostFeatures args else hostFeatures;
   };
 
+  featureChecks = { config, options, pkgs, ... }: {
+    assertions = builtins.concatMap (f: f.checks platform { inherit config options pkgs; }) features;
+  };
+
   filterNonNull = builtins.filter (m: m != null);
 
   commonFeatureModules = map (f: f.commonModule) features;
@@ -71,6 +75,7 @@ let
     hostFeaturesModule
     { nixpkgs.config.allowUnfree = true; }
     systemHomeManagerModule
+    featureChecks
   ]
   ++ commonFeatureModules
   ++ (if platform == "nixos" then nixosFeatureModules else darwinFeatureModules)
