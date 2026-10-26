@@ -15,12 +15,14 @@ mkFeature {
     {
       package = mkOption {
         type = types.package;
+        defaultText = lib.literalMD "`pkgs.pass` with the `pass-otp` extension (`pkgs.pass-wayland` on NixOS hosts running Wayland)";
         default = pkgs.${passPkg}.withExtensions (exts: [ exts.pass-otp ]);
         description = "The pass package to use (pass-wayland on Wayland/NixOS), with the pass-otp extension.";
       };
 
       storeDir = mkOption {
         type = types.str;
+        defaultText = lib.literalExpression ''"''${config.features.xdg.baseDirs.stateHome}/password-store"'';
         default = "${config.features.xdg.baseDirs.stateHome}/password-store";
         description = "Password store location, exported as PASSWORD_STORE_DIR.";
       };
