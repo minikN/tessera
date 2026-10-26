@@ -10,21 +10,25 @@ mkFeature {
   options = { config, ... }: {
     username = mkOption {
       type = types.str;
+      defaultText = lib.literalExpression "config.globals.user.user";
       default = config.globals.user.user or "user";
       description = "Username.";
     };
     fullName = mkOption {
       type = types.str;
+      defaultText = lib.literalExpression "config.globals.user.fullName";
       default = config.globals.user.fullName or "";
       description = "Full name.";
     };
     email = mkOption {
       type = types.str;
+      defaultText = lib.literalExpression "config.globals.user.email";
       default = config.globals.user.email or "";
       description = "Email address.";
     };
     homeDirectory = mkOption {
       type = types.str;
+      defaultText = lib.literalMD "`/Users/<username>` on macOS, `/home/<username>` on Linux";
       default =
         if config.globals.platform == "darwin"
         then "/Users/${config.features.user.username}"
