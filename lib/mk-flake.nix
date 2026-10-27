@@ -1,4 +1,4 @@
-{ lib, types, tesseraInputs, mkFeature, mkHost, mkElispConfig, discoverFeatures, discoverHosts }:
+{ lib, helpers, tesseraInputs, mkHost, discoverFeatures, discoverHosts, ... }@tessera:
 
 ## Build every host in `hosts` from tessera's features plus the user's own.
 { inputs ? { }
@@ -9,9 +9,8 @@
 
 let
   allInputs = tesseraInputs // inputs;
-  helpers = { inherit mkFeature mkElispConfig; tessera = { inherit types; }; };
 
-  allFeatures = discoverFeatures ../features helpers
+  allFeatures = tessera.features
     ++ lib.optionals (features != null) (discoverFeatures features helpers);
 
   builtHosts = builtins.listToAttrs (map
