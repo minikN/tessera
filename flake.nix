@@ -17,8 +17,20 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   };
 
-  outputs = inputs: {
-    lib = import ./lib { lib = inputs.nixpkgs.lib; inherit inputs; };
-    hardwareProfiles = builtins.attrNames inputs.nixos-hardware.nixosModules;
-  };
+  outputs = inputs:
+    let
+      lib = import ./lib { lib = inputs.nixpkgs.lib; inherit inputs; };
+      systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+    in
+    {
+      inherit lib;
+      hardwareProfiles = builtins.attrNames inputs.nixos-hardware.nixosModules;
+
+      packages = inputs.nixpkgs.lib.genAttrs systems (system: {
+        docs = lib.mkDocs {
+          pkgs = inputs.nixpkgs.legacyPackages.${system};
+          inherit (lib) features;
+        };
+      });
+    };
 }
