@@ -9,13 +9,20 @@ let
   types = import ./types.nix { inherit lib; };
   setsOf = import ./sets.nix { inherit lib; };
   evalDocs = import ./eval-docs.nix { inherit lib; };
+
+  helpers = { inherit mkFeature mkElispConfig; tessera = { inherit types; }; };
+  features = discover.discoverFeatures ../features helpers;
+
   mkFlake = import ./mk-flake.nix {
-    inherit lib types mkFeature mkHost mkElispConfig;
+    inherit lib helpers features mkHost;
     tesseraInputs = inputs;
     inherit (discover) discoverFeatures discoverHosts;
   };
+  optionBlocks = import ./option-blocks.nix { inherit lib; };
+  readsOf = import ./reads.nix { inherit lib; };
+  mkDocs = import ./mk-docs.nix { inherit lib inputs evalDocs setsOf optionBlocks readsOf; };
 in
 {
-  inherit mkFeature mkHost mkSchemeAttrs mkElispConfig mkFlake types setsOf evalDocs;
+  inherit mkFeature mkHost mkSchemeAttrs mkElispConfig mkFlake mkDocs types setsOf evalDocs features;
   inherit (discover) discoverFeatures discoverHosts;
 }
