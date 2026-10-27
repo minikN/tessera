@@ -24,28 +24,23 @@ mkFeature {
         (`home-manager switch --flake .#<host>`).
     '';
     nixos = ''
-      **Window manager autostart:** with `autostartWmOnTTY` set, logging in
-      on that TTY starts the window manager in `globals.apps.wm` instead of
-      a shell.
+      - `autostartWmOnTTY`: starts `globals.apps.wm` (if set) when logged in
+        on the set tty.
 
-      ```nix
-      features = {
-        sway.enable = true;
-        home.autostartWmOnTTY = "/dev/tty1";
-      };
-      ```
+        ```nix
+        features = {
+          sway.enable = true;
+          home.autostartWmOnTTY = "/dev/tty1";
+        };
+        ```
     '';
     darwin = ''
-      - **Login shell:** Nix cannot change the login shell of an existing
-        macOS user, so a launchd daemon runs `chsh` as root on every
-        activation. Without a shell feature it falls back to `/bin/zsh`.
       - **Applications:** apps from home-manager are copied to
         `~/Applications/Home Manager Apps`, so Spotlight and the Dock find
         them.
-      - **Environment for GUI apps:** a launchd agent hands the login
-        shell's `PATH` and home-manager's session variables to launchd, so
-        apps started from the Dock or Spotlight see the same environment as
-        a terminal.
+      - **Environment** `home.sessionVariables` is forwarded to `launchd` so
+        that application started via Spotlight or Dock have the same environment
+        as the terminal.
     '';
   };
 
