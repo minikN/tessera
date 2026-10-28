@@ -85,6 +85,7 @@ mkFeature {
       ];
 
       home.pointerCursor = lib.mkDefault {
+        enable = true;
         inherit (cfg.cursorTheme) name package;
         size = cfg.cursorSize;
         gtk.enable = true;
