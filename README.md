@@ -113,7 +113,7 @@ features = { config, ... }: {
 List the available hardware profiles with:
 
 ```bash
-nix eval github:<you>/tessera#hardwareProfiles
+nix eval github:minikN/tessera#hardwareProfiles
 ```
 
 ## Features
@@ -151,6 +151,15 @@ Enable on any host with `features.zsh.enable = true;`.
 mkFeature {
   name = "myFeature";        # string or list of strings (nested: ["foo" "bar"])
   enableByDefault = false;   # if true, the feature is on unless a host disables it
+  platforms = null;          # optional subset of [ "home" "nixos" "darwin" ] (see below)
+  requires = [ ];            # optional: other features this one needs
+
+  doc = {
+    summary = "One line.";
+    description = "Markdown that applies everywhere.";
+    nixos = "Markdown, NixOS only (optional).";
+    darwin = "Markdown, macOS only (optional).";
+  };
 
   options = { config, pkgs, ... }: {
     # Options live under features.<name>.*
@@ -174,6 +183,17 @@ Each block's body is automatically wrapped in
 config) and the standalone `homeConfigurations.<host>` output — keep it
 free of system-level options.
 
+**Platforms.** A feature supports Home, NixOS and macOS where it has a
+block (a `home` block counts for both systems) and its `package` option,
+if any, is available there. `platforms` only narrows that, for what can't
+be derived (e.g. `gtk` installs Linux-only tools). Explicitly enabling a
+feature on a host it doesn't support is an error; features that are only
+on by default are left alone.
+
+**Dependencies.** A nested feature (`emacs.keymaps`) requires its parent
+(`emacs`); `requires` adds others. Enabling a feature without its
+requirements is an error.
+
 ### Cross-platform feature
 
 ```nix
@@ -194,6 +214,41 @@ mkFeature {
   nixos  = { config, ... }: { time.timeZone = config.features.base.timeZone; };
   darwin = { config, ... }: { time.timeZone = config.features.base.timeZone; };
 }
+```
+
+### Keybindings
+
+Every feature for an application that takes keybindings (window managers,
+launchers, terminals, shells) has a `keybindings` option. Your bindings
+are merged over the feature's defaults: new keys are added, and a key the
+feature already binds is overridden.
+
+If the feature has options that keybindings depend on (sway's `modifier`,
+`left`, `right`, `up`, `down`), `keybindings` may also be a function of
+them, plus `apps` (the global apps: terminal, launcher, …):
+
+```nix
+features.sway.keybindings = { modifier, left, apps, ... }: {
+  "${modifier}+Shift+${left}" = "move left 50px";
+  "${modifier}+t" = "exec ${apps.terminal}";
+};
+```
+
+A plain attrset works too, and both forms can be mixed across modules.
+Features without such options take a plain attrset, e.g.
+`features.ghostty.keybindings."ctrl+shift+t" = "new_tab";`.
+
+Feature authors get the type from the `tessera` argument and call the
+function once with the parameters:
+
+```nix
+{ lib, mkFeature, tessera, ... }:
+# ...
+keybindings = lib.mkOption {
+  type = tessera.types.keybindings lib.types.str;
+  default = { };
+  apply = f: f { inherit (cfg) modifier left right up down; inherit (config.globals) apps; };
+};
 ```
 
 ## Globals
@@ -257,7 +312,22 @@ GPLv3 — see [LICENSE](./LICENSE).
 
 ## Acknowledgements
 
-The feature/host pattern used here originated from
-[migalmoreno/ordenada](https://github.com/migalmoreno/ordenada) (private). The
-`mkFeature` helper, the platform-block layout (`nixos` / `darwin` / `home`),
-and the globals/feature module wiring are all adapted from that project.
+tessera is heavily inspired / based on the idea of two other projects:
+- [Andrew Tropin's RDE](https://github.com/abcdw/rde). The original idea of
+  composable features / modules that can be picked and combined to match
+  ones preferred environment. It's for Guix what tessera is for Nix.
+
+- [Migal Moreno's Ordenada](https://github.com/migalmoreno/ordenada) (private). 
+  The original project that took RDE's idea to Nix. It's discontinued and
+  its repository is private, but I have [a fork](https://github.com/minikN/ordenada).
+  tessera was born from the discontinuation of that project. I wanted to continue
+  the ideas it brought under my own flag.
+
+## AI
+I was contributor to both [rde](https://github.com/abcdw/rde/commits/master/?author=minikN) and
+[ordenada](https://github.com/minikN/ordenada/commits/master/?author=minikN) before I ever came
+in touch with AI. But it's true: Nowadays, I simply don't have the time (family, job) anymore
+to allocate as much time to my projects as I'd like to and I use AI to make decent progress
+in the time I have available. I am deliberate in my use of it. I use it in small chunks, one task
+at a time. I review its code and mostly run multiple iterations until I'm happy. I never commit
+something I don't fully understand.
