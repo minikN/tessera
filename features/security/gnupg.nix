@@ -3,6 +3,31 @@
 mkFeature {
   name = "gnupg";
 
+  doc = {
+    summary = "GnuPG with gpg-agent.";
+    description = ''
+      Sets up GnuPG with its keyring in `storeDir` and runs gpg-agent as the
+      SSH agent. Passphrases are rememberd for `defaultTtl` seconds.
+      `pinentryPackage` is used as the pin entry.
+
+      - **SSH:** gpg-agent also works as the SSH agent. The GPG keys listed in
+        `sshKeys` (by keygrip, see `gpg --list-keys --with-keygrip`) are offered
+        to SSH.
+
+      ```nix
+      features.gnupg = {
+        enable = true;
+        sshKeys = [ "0123456789ABCDEF0123456789ABCDEF01234567" ];
+      };
+      ```
+    '';
+    darwin = ''
+      - **Keychain:** passphrases are asked for with pinentry-mac;
+        `keychainInteraction` decides whether it offers to save them in the
+        macOS keychain.
+    '';
+  };
+
   options = { config, pkgs, ... }:
     let
       inherit (lib) mkOption types;

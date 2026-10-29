@@ -3,6 +3,21 @@
 mkFeature {
   name = "choose-gui";
 
+  doc = {
+    summary = "choose, a fuzzy finder for macOS, as launcher and password menu.";
+    description = ''
+      Uses choose (choose-gui), styled with the shared colours (and the
+      monospace font when the font feature is enabled), for two global apps:
+
+      - **Launcher** (`globals.apps.launcher`): lists the installed `.app`
+        bundles and opens the one you pick. Disable with `enableLauncher = false`.
+      - **Password manager** (`globals.apps.passwordManager`): pick a pass
+        entry, then copy its password, username, URL or one-time code. It uses
+        the password-store and gnupg features' settings. Disable with
+        `enablePasswordManager = false`.
+    '';
+  };
+
   options = { config, pkgs, ... }:
     let
       inherit (lib) mkOption mkPackageOption types;
@@ -32,12 +47,13 @@ mkFeature {
       ## bare hex (no leading #), so use the plain scheme, not withHashtag.
       chooseCmd =
         let
-          mono = config.features.font.fonts.monospace;
+          font = config.features.font;
+          mono = font.fonts.monospace;
           scheme = config.features.theme.scheme;
         in
         "${cfg.package}/bin/choose"
-        + " -f ${lib.escapeShellArg mono.name}"
-        + " -s ${toString (mono.size * 3 / 2)}"
+        + lib.optionalString font.enable
+          " -f ${lib.escapeShellArg mono.name} -s ${toString (mono.size * 3 / 2)}"
         + " -c ${scheme.base0D}"
         + " -b ${scheme.base02}";
 

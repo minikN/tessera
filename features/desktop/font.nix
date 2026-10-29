@@ -3,6 +3,28 @@
 mkFeature {
   name = "font";
 
+  doc = {
+    summary = "Default fonts for desktop applications and terminals.";
+    description = ''
+      Installs four fonts and makes them the fontconfig defaults: `monospace`
+      for terminals and editors, `serif`, `sans` (the serif font unless set)
+      and `unicode` for emoji. A few fallback fonts (DejaVu, Unifont, Font
+      Awesome) are installed too.
+
+      - **Shared with other features:** terminal, editor and launcher
+        features (e.g. ghostty, Emacs, rofi, choose-gui) use these fonts
+        while this feature is enabled. Without it, they keep their own
+        default fonts.
+
+      ```nix
+      features.font = {
+        enable = true;
+        fonts.monospace = { name = "Menlo"; size = 13; };
+      };
+      ```
+    '';
+  };
+
   options = { config, pkgs, ... }:
     let
       inherit (lib) mkOption types;

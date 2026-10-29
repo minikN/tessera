@@ -78,8 +78,6 @@ let
       drun-show-actions = showActions;
       show-icons = showIcons;
 
-      font = with config.features.font.fonts.monospace; "${name} ${toString size}";
-
       kb-element-next = "Alt+n";
       kb-element-prev = "Alt+p";
 
@@ -91,10 +89,32 @@ let
       kb-remove-word-forward = "Alt+d";
       kb-remove-word-back = "Control+w,Control+BackSpace";
       kb-clear-line = "Control+slash";
+    }
+    // lib.optionalAttrs config.features.font.enable {
+      font = with config.features.font.fonts.monospace; "${name} ${toString size}";
     };
 in
 mkFeature {
   name = "rofi";
+
+  doc = {
+    summary = "rofi as application launcher, password menu and passphrase prompt.";
+    description = ''
+      Installs rofi, styled with the configured theme and fonts, and uses it for:
+
+      - **Launcher** (`globals.apps.launcher`): `rofi -show drun`. Off with
+        `enableLauncher = false`.
+      - **Password manager** (`globals.apps.passwordManager`): on Wayland
+        (`globals.wayland`) tessen, which can type or copy entries; on X11 a
+        small menu that copies an entry's password, username, URL or one-time
+        code. Off with `enablePasswordManager = false`.
+      - **Passphrase prompt:** GnuPG (gnupg feature) asks for passphrases
+        through rofi (pinentry-rofi). Off with `enablePinentry = false`.
+
+      `keybindings` sets rofi's `kb-*` settings on top of the defaults (e.g.
+      `Alt+n` and `Alt+p` for the next and previous entry).
+    '';
+  };
 
   options = { config, pkgs, ... }:
     let

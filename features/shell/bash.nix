@@ -3,6 +3,20 @@
 mkFeature {
   name = "bash";
 
+  doc = {
+    summary = "Bash as the login shell.";
+    description = ''
+      Installs interactive Bash with completion and registers it as
+      `globals.apps.shell`.
+
+      - **Files:** history goes to `~/.local/state/bash/history`;
+        `extraConfig` is appended to `.bash_profile`.
+      - **Keys:** `keybindings` are readline bindings, written to `~/.inputrc`.
+
+      It cannot be enabled together with other shell feature.
+    '';
+  };
+
   options = { pkgs, ... }: {
     package = lib.mkPackageOption pkgs "bash" { default = [ "bashInteractive" ]; };
     extraConfig = lib.mkOption {

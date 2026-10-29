@@ -14,6 +14,20 @@ mkFeature {
   name = "base";
   enableByDefault = true;
 
+  doc = {
+    summary = "Basic system settings: time zone, locale and Nix.";
+    description = ''
+      Enabled by default. Sets the time zone (`timeZone`) and enables flakes
+      and the `nix` command.
+    '';
+    nixos = ''
+      - **Locale:** `locale` sets the system locale.
+    '';
+    darwin = ''
+      - **Nix:** uses Lix as the Nix implementation.
+    '';
+  };
+
   options = {
     timeZone = mkOption {
       type = types.str;
