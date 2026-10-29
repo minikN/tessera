@@ -3,6 +3,41 @@
 mkFeature {
   name = "aerospace";
 
+  doc = {
+    summary = "AeroSpace, a tiling window manager for macOS.";
+    description = ''
+      Runs AeroSpace, restarting it if it quits, and registers it as
+      `globals.apps.wm`. Windows are tiled with 12 pixel gaps across ten
+      persistent workspaces.
+
+      Keys combine `modifier` (`cmd`) with the direction keys `left`, `right`,
+      `up` and `down` (the arrow keys):
+
+      | Keys | Action |
+      |------|--------|
+      | `cmd-enter` | terminal (`globals.apps.terminal`) |
+      | `cmd-shift-d` | launcher (`globals.apps.launcher`) |
+      | `cmd-shift-p` | password manager (`globals.apps.passwordManager`) |
+      | `cmd-shift-q` | close the window |
+      | `cmd-<arrow>` | focus; with `shift` move, with `ctrl` join |
+      | `cmd-shift-f` | fullscreen |
+      | `cmd-s`, `cmd-w` | tiles or accordion layout |
+      | `cmd-shift-space` | toggle floating |
+      | `cmd-r` | resize mode (arrows resize, `=` balances, `esc` leaves) |
+      | `cmd-keypad0` to `cmd-keypad9` | workspace; with `shift` move the window there |
+      | `cmd-shift-c` | reload the configuration |
+
+      `keybindings` adds or overrides keys and can use the same parameters;
+      `extraConfig` is merged into AeroSpace's settings.
+
+      ```nix
+      features.aerospace.keybindings = { modifier, apps, ... }: {
+        "''${modifier}-shift-e" = "exec-and-forget ''${apps.editor}";
+      };
+      ```
+    '';
+  };
+
   options = { config, pkgs, ... }:
     let
       inherit (lib) mkOption mkPackageOption types;

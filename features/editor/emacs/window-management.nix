@@ -44,6 +44,70 @@ in
 mkFeature {
   name = [ "emacs" "window-management" ];
 
+  doc = {
+    summary = "Predictable buffer display in side windows.";
+    description = ''
+      Where Emacs shows a buffer normally depends on whoever displays it. This
+      feature assigns buffers to a configurable set of side windows, and every
+      buffer that belongs to one always appears there. It only writes rules
+      for Emacs' own `display-buffer-alist` and side windows, plus commands to
+      work with them.
+
+      By default there are four side windows. Left and right span the full
+      height of the frame; the bottom ones sit between them:
+
+      | Window | Size | Houses |
+      |--------|------|--------|
+      | `left` | 20% | nothing yet; meant for file and tree lists |
+      | `right` | 30% | documentation and help |
+      | `bottom-left` | 30% | shells, terminals and REPLs |
+      | `bottom-right` | 30% | compilation and grep results |
+
+      - **Matching buffers:** each window lists buffer-name regexps and major
+        modes. A mode also matches the modes derived from it, so `comint-mode`
+        covers `M-x shell`, `M-x ielm` and other REPLs.
+      - **Main window:** a buffer opened from a side window that doesn't
+        belong there (e.g. a file opened from a shell) goes to the main area,
+        so side windows keep their buffers. `C-x b` follows the rules too.
+      - **Customize:** the layout is the default of
+        `tessera-window-management-windows`; changes saved with
+        `M-x customize` take precedence.
+
+      With the keymaps feature, the commands live under `C-c w`. Each window
+      has a key, by default following its position on screen: `h` left, `j`
+      bottom-left, `k` bottom-right, `l` right.
+
+      | Keys | Command |
+      |------|---------|
+      | `C-c w h` | show or hide the left window (likewise `j`, `k`, `l`) |
+      | `C-c w w` | show or hide all side windows |
+      | `C-c w c h` | cycle the left window's buffers; keep pressing `h` to continue |
+      | `C-c w f h` | focus: only the left window, at `focusSize` of the frame |
+      | `C-c w F h` | show the left window's buffer as the only window |
+
+      Calling focus or fullscreen again restores the previous layout. Cycling
+      goes through the window's buffers in alphabetical order, and showing a
+      window picks its most recently used buffer.
+
+      The keys run commands without a prompt, one per window and command,
+      e.g. `tessera-window-management-left-toggle`. The general commands
+      `tessera-window-management-toggle`, `-toggle-all`, `-cycle`, `-focus`
+      and `-fullscreen` read the window name, defaulting to the selected side
+      window.
+
+      ```nix
+      # another feature claiming its buffers
+      features.emacs.window-management.windows.bottom-right.modes = [ "magit-process-mode" ];
+
+      # a host dropping a window and adding one at the top
+      features.emacs.window-management.windows = {
+        bottom-right.enable = false;
+        top = { side = "top"; size = 0.25; names = [ "\\`\\*Messages\\*" ]; };
+      };
+      ```
+    '';
+  };
+
   options = {
     windows = mkOption {
       type = types.attrsOf windowType;
@@ -106,14 +170,12 @@ mkFeature {
       (mkElispConfig pkgs {
         name = "tessera-window-management";
         summary = "Predictable buffer display in side windows";
-        manual = ./window-management.org;
 
         config = ''
           (require 'seq)
 
           (defgroup tessera-window-management nil
             "Predictable buffer display in side windows."
-            :link '(info-link "(tessera-window-management)")
             :group 'tessera
             :prefix "tessera-window-management-")
 

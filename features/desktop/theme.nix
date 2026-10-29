@@ -23,6 +23,30 @@ in
 mkFeature {
   name = "theme";
 
+  doc = {
+    summary = "A light or dark colour scheme shared by all features.";
+    description = ''
+      Holds the base16 colour scheme that other features take their colours
+      from, e.g. ghostty, sway, rofi, choose-gui and the GTK theme. `polarity`
+      picks the built-in light or dark scheme, `scheme` can replace it
+      entirely, and `wallpaper` sets a background for window managers that
+      show one.
+
+      - **Shared with other features:** they use these options even when this
+        feature is disabled, so setting `polarity` or `scheme` is enough;
+        enabling the feature is only needed for `enableToggle`.
+
+      ```nix
+      features.theme.polarity = "dark";
+      ```
+    '';
+    nixos = ''
+      - `enableToggle`: builds the other polarity as a NixOS specialisation and
+        installs `toggle-theme` (also as a desktop entry), which switches
+        between light and dark at runtime without asking for a password.
+    '';
+  };
+
   options = { config, ... }:
     let
       inherit (lib) mkEnableOption mkOption types;

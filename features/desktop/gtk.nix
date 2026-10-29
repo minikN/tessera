@@ -4,6 +4,19 @@ mkFeature {
   name = "gtk";
   platforms = [ "home" "nixos" ];
 
+  doc = {
+    summary = "GTK theme, icons and cursor that follow the light/dark polarity.";
+    description = ''
+      Styles GTK 3 and GTK 4 applications: the theme (adw-gtk3, light or dark
+      following `features.theme.polarity`), the icon theme (Adwaita) and the
+      cursor (Bibata, `cursorSize` pixels). It also installs dconf and GNOME
+      Tweaks.
+
+      - **Tweaks:** `extraCss` and `extraConfig` (`settings.ini` entries) apply
+        to both GTK versions.
+    '';
+  };
+
   options = { config, pkgs, ... }:
     let
       inherit (lib) mkOption types;

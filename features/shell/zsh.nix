@@ -3,6 +3,25 @@
 mkFeature {
   name = "zsh";
 
+  doc = {
+    summary = "Zsh as the login shell.";
+    description = ''
+      Installs Zsh with completion and syntax highlighting and registers it as
+      `globals.apps.shell`.
+
+      - **Files:** configuration lives in `~/.config/zsh`, history in
+        `~/.local/state/zsh/history`; `extraConfig` is appended to `.zprofile`.
+      - **Keys:** `keybindings` are set with `bindkey`.
+
+      It cannot be enabled together with other shell feature.
+    '';
+    nixos = ''
+      - **System shell:** Zsh is enabled system-wide too, which lets the home
+        feature start the window manager from the login shell
+        (`home.autostartWmOnTTY`).
+    '';
+  };
+
   options = { pkgs, ... }: {
     package = lib.mkPackageOption pkgs "zsh" { };
     extraConfig = lib.mkOption {

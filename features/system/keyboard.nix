@@ -6,6 +6,31 @@ in
 mkFeature {
   name = "keyboard";
 
+  doc = {
+    summary = "Keyboard layout for the console, X11 and Wayland.";
+    description = ''
+      `layout` sets the XKB layout, variant and options: by default a US layout
+      with Caps Lock as an additional Control key (`ctrl:nocaps`). The layout
+      is handed to home-manager, and window managers like sway use it for
+      their own keyboard setup.
+
+      ```nix
+      features.keyboard = {
+        enable = true;
+        layout = { name = "de"; options = [ "ctrl:nocaps" ]; };
+      };
+      ```
+    '';
+    nixos = ''
+      - **Console and X11:** the text console uses the (first) layout, display
+        managers and X11 sessions use all of it.
+    '';
+    darwin = ''
+      - **Caps Lock:** macOS keeps its own layout; only `ctrl:nocaps` is
+        applied, remapping Caps Lock to Control.
+    '';
+  };
+
   options = {
     layout = mkOption {
       description = "Keyboard layout.";

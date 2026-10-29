@@ -3,6 +3,49 @@
 mkFeature {
   name = "sway";
 
+  doc = {
+    summary = "Sway, a tiling Wayland compositor.";
+    description = ''
+      Runs Sway and registers it as `globals.apps.wm` and `globals.wayland`. It
+      uses the keyboard layout (keyboard feature), the cursor (gtk feature) and
+      the colours and wallpaper (theme feature), and starts the commands in
+      `globals.autoloads` with the session. swayr is installed for switching
+      windows.
+
+      Keys are home-manager's Sway defaults with `modifier` (`Mod4`, the super
+      key) and the direction keys `h`, `j`, `k` and `l`, plus:
+
+      | Keys | Action |
+      |------|--------|
+      | `Mod4+Return` | terminal (`globals.apps.terminal`) |
+      | `Mod4+d` | launcher (`globals.apps.launcher`) |
+      | `Mod4+p` | password manager (`globals.apps.passwordManager`) |
+      | `Mod4+b` | show or hide the bar (with `useGlobalBar`) |
+
+      - **Bar:** with `useGlobalBar`, Sway starts the bar in `globals.apps.bar`
+        itself (`extraGlobalBarSettings` adds to its settings).
+
+      `keybindings` adds or overrides keys and can use the same parameters;
+      `extraConfig` is merged into the Sway configuration.
+
+      ```nix
+      features = {
+        sway = {
+          enable = true;
+          keybindings = { modifier, apps, ... }: {
+            "''${modifier}+n" = "exec ''${apps.editor}";
+          };
+        };
+        home.autostartWmOnTTY = "/dev/tty1";  # start Sway when logging in on tty1
+      };
+      ```
+    '';
+    nixos = ''
+      - **System:** enables graphics and polkit, and runs Chromium and Electron
+        apps natively on Wayland (`NIXOS_OZONE_WL`).
+    '';
+  };
+
   options = { config, pkgs, ... }:
     let
       inherit (lib) mkEnableOption mkOption mkPackageOption types;

@@ -3,6 +3,27 @@
 mkFeature {
   name = "ghostty";
 
+  doc = {
+    summary = "The Ghostty terminal.";
+    description = ''
+      Installs Ghostty and registers it as `globals.apps.terminal.
+
+      - **Look:** Will adapt its appearance based on the configured theme and fonts.
+      - **SSH:** shell integration copies Ghostty's terminfo and environment to
+        hosts you connect to.
+      - **Settings:** `settings` accepts any Ghostty setting and overrides the
+        defaults; `keybindings` adds key bindings.
+
+      ```nix
+      features.ghostty = {
+        enable = true;
+        settings.cursor-style = "bar";
+        keybindings."ctrl+shift+t" = "new_tab";
+      };
+      ```
+    '';
+  };
+
   options = { config, pkgs, ... }: {
     package = lib.mkOption {
       type = lib.types.package;
@@ -37,7 +58,8 @@ mkFeature {
 
   home = { config, ... }:
     let
-      mono = config.features.font.fonts.monospace;
+      font = config.features.font;
+      mono = font.fonts.monospace;
       hex = config.features.theme.scheme.withHashtag;
     in
     {
@@ -51,6 +73,8 @@ mkFeature {
           window-padding-x = 8;
           window-padding-y = 8;
 
+          shell-integration-features = "ssh-env,ssh-terminfo";
+        } // lib.optionalAttrs font.enable {
           font-family = mono.name;
           font-style = "Regular";
 
@@ -62,8 +86,6 @@ mkFeature {
 
           font-family-bold-italic = mono.name;
           font-style-bold-italic = "Bold Italic";
-
-          shell-integration-features = "ssh-env,ssh-terminfo";
 
           font-size = mono.size;
         } // lib.optionalAttrs (config.features.ghostty.keybindings != { }) {

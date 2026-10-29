@@ -6,6 +6,36 @@ in
 mkFeature {
   name = "ssh";
 
+  doc = {
+    summary = "SSH client settings and, on NixOS, an SSH server.";
+    description = ''
+      Configures the SSH client: `matchBlocks` holds per-host settings. An
+      ssh-agent is started unless gpg-agent already serves SSH keys (see the
+      gnupg feature).
+
+      ```nix
+      features.ssh = {
+        enable = true;
+        matchBlocks.server = { hostname = "10.0.0.10"; user = "jane"; };
+      };
+      ```
+    '';
+    nixos = ''
+      - **Server:** `daemon.enable` runs sshd and opens its port. Password and
+        root logins are off by default (`daemon.passwordAuthentication`,
+        `daemon.permitRootLogin`); `authorizedKeyFiles` lists the public keys
+        that may log in as the user.
+
+        ```nix
+        features.ssh = {
+          enable = true;
+          daemon.enable = true;
+          authorizedKeyFiles = [ ../keys/me.pub ];
+        };
+        ```
+    '';
+  };
+
   options = _: {
     daemon = {
       enable = mkEnableOption "the SSH server daemon (sshd)";

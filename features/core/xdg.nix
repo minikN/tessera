@@ -10,6 +10,32 @@ mkFeature {
   name = "xdg";
   enableByDefault = true;
 
+  doc = {
+    summary = "Standard XDG folders for configuration, data, caches and documents.";
+    description = ''
+      Points home-manager's XDG base directories to `baseDirs`, so programs and
+      other features keep their files in the usual places: configuration in
+      `~/.config`, data in `~/.local/share`, caches in `~/.cache` and state such
+      as shell history in `~/.local/state`. It is enabled by default.
+
+      - **User folders:** `userDirs` defines the folders for documents,
+        downloads, music, pictures, public files and videos; entries set to
+        `null` are left out.
+    '';
+    nixos = ''
+      - **User folders:** registered with `xdg-user-dirs` and created.
+      - **Default applications:** home-manager manages the MIME associations.
+      - **Portals:** desktop portals (GTK, plus wlroots when a Wayland
+        compositor like sway sets `globals.wayland`) let applications open file
+        pickers and share the screen.
+    '';
+    darwin = ''
+      - **User folders:** created and exported as `XDG_*_DIR` environment
+        variables. Their names are capitalized (`~/Documents`) to match macOS;
+        see `capitalizeUserDirs`.
+    '';
+  };
+
   options = { config, ... }:
     let
       home = config.features.user.homeDirectory;
