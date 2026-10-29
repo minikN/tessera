@@ -18,9 +18,7 @@ let
     tesseraInputs = inputs;
     inherit (discover) discoverFeatures discoverHosts;
   };
-  optionBlocks = import ./option-blocks.nix { inherit lib; };
-  readsOf = import ./reads.nix { inherit lib; };
-  mkDocs = import ./mk-docs.nix { inherit lib inputs evalDocs setsOf optionBlocks readsOf; };
+  mkDocs = import ./mk-docs.nix { inherit lib inputs evalDocs setsOf; };
 in
 {
   inherit mkFeature mkHost mkSchemeAttrs mkElispConfig mkFlake mkDocs types setsOf evalDocs features;
