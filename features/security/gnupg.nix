@@ -28,7 +28,8 @@ mkFeature {
     '';
   };
 
-  options = { config, pkgs, ... }:
+  options =
+    { config, pkgs, ... }:
     let
       inherit (lib) mkOption types;
     in
@@ -48,10 +49,7 @@ mkFeature {
       pinentryPackage = mkOption {
         type = types.nullOr types.package;
         defaultText = lib.literalMD "`pkgs.pinentry_mac` on macOS, `pkgs.pinentry-qt` on Linux";
-        default =
-          if config.globals.platform == "darwin"
-          then pkgs.pinentry_mac
-          else pkgs.pinentry-qt;
+        default = if config.globals.platform == "darwin" then pkgs.pinentry_mac else pkgs.pinentry-qt;
         description = "Pinentry binary used for prompts.";
       };
 
@@ -69,7 +67,13 @@ mkFeature {
       };
     };
 
-  home = { config, lib, pkgs, ... }:
+  home =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = config.features.gnupg;
     in
@@ -94,8 +98,12 @@ mkFeature {
 
       (lib.mkIf (config.globals.platform == "darwin") {
         home.activation.pinentryKeychain = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-          $DRY_RUN_CMD /usr/bin/defaults write org.gpgtools.pinentry-mac UseKeychain -bool ${if cfg.keychainInteraction then "YES" else "NO"}
-          $DRY_RUN_CMD /usr/bin/defaults write org.gpgtools.pinentry-mac DisableKeychain -bool ${if cfg.keychainInteraction then "NO" else "YES"}
+          $DRY_RUN_CMD /usr/bin/defaults write org.gpgtools.pinentry-mac UseKeychain -bool ${
+            if cfg.keychainInteraction then "YES" else "NO"
+          }
+          $DRY_RUN_CMD /usr/bin/defaults write org.gpgtools.pinentry-mac DisableKeychain -bool ${
+            if cfg.keychainInteraction then "NO" else "YES"
+          }
         '';
       })
     ];

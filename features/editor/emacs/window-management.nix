@@ -1,4 +1,9 @@
-{ lib, mkFeature, mkElispConfig, ... }:
+{
+  lib,
+  mkFeature,
+  mkElispConfig,
+  ...
+}:
 
 let
   inherit (lib) mkDefault mkOption types;
@@ -11,7 +16,12 @@ let
         description = "Whether to include this window.";
       };
       side = mkOption {
-        type = types.enum [ "left" "right" "top" "bottom" ];
+        type = types.enum [
+          "left"
+          "right"
+          "top"
+          "bottom"
+        ];
         description = "Frame side of the window.";
       };
       slot = mkOption {
@@ -42,7 +52,10 @@ let
   };
 in
 mkFeature {
-  name = [ "emacs" "window-management" ];
+  name = [
+    "emacs"
+    "window-management"
+  ];
 
   doc = {
     summary = "Predictable buffer display in side windows.";
@@ -126,13 +139,20 @@ mkFeature {
     };
   };
 
-  home = { config, lib, pkgs, ... }:
+  home =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = config.features.emacs.window-management;
       windows = lib.filterAttrs (_: w: w.enable) cfg.windows;
       toWindow = name: w: ''
         (${name} :side ${w.side} :slot ${toString w.slot} :size ${toString w.size}${
-          lib.optionalString (w.key != null) " :key ${builtins.toJSON w.key}"}
+          lib.optionalString (w.key != null) " :key ${builtins.toJSON w.key}"
+        }
          :buffers (${lib.concatStringsSep " " (map builtins.toJSON w.names ++ w.modes)}))'';
     in
     lib.mkMerge [
@@ -148,14 +168,25 @@ mkFeature {
             side = mkDefault "right";
             size = mkDefault 0.3;
             names = [ "\\`\\*eldoc" ];
-            modes = [ "help-mode" "Info-mode" "Man-mode" "woman-mode" "apropos-mode" "shortdoc-mode" ];
+            modes = [
+              "help-mode"
+              "Info-mode"
+              "Man-mode"
+              "woman-mode"
+              "apropos-mode"
+              "shortdoc-mode"
+            ];
           };
           bottom-left = {
             key = mkDefault "j";
             side = mkDefault "bottom";
             slot = mkDefault (-1);
             size = mkDefault 0.3;
-            modes = [ "comint-mode" "eshell-mode" "term-mode" ];
+            modes = [
+              "comint-mode"
+              "eshell-mode"
+              "term-mode"
+            ];
           };
           bottom-right = {
             key = mkDefault "k";

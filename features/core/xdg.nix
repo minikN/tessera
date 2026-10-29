@@ -1,10 +1,14 @@
 { lib, mkFeature, ... }:
 
 let
-  inherit (lib) mkIf mkMerge mkOption types;
+  inherit (lib)
+    mkIf
+    mkMerge
+    mkOption
+    types
+    ;
 
-  capitalize = s:
-    lib.toUpper (lib.substring 0 1 s) + lib.substring 1 (-1) s;
+  capitalize = s: lib.toUpper (lib.substring 0 1 s) + lib.substring 1 (-1) s;
 in
 mkFeature {
   name = "xdg";
@@ -36,7 +40,8 @@ mkFeature {
     '';
   };
 
-  options = { config, ... }:
+  options =
+    { config, ... }:
     let
       home = config.features.user.homeDirectory;
       cap = config.features.xdg.capitalizeUserDirs;
@@ -61,10 +66,22 @@ mkFeature {
         };
         type = types.submodule {
           options = {
-            configHome = mkOption { type = types.str; description = "XDG_CONFIG_HOME."; };
-            dataHome   = mkOption { type = types.str; description = "XDG_DATA_HOME."; };
-            cacheHome  = mkOption { type = types.str; description = "XDG_CACHE_HOME."; };
-            stateHome  = mkOption { type = types.str; description = "XDG_STATE_HOME."; };
+            configHome = mkOption {
+              type = types.str;
+              description = "XDG_CONFIG_HOME.";
+            };
+            dataHome = mkOption {
+              type = types.str;
+              description = "XDG_DATA_HOME.";
+            };
+            cacheHome = mkOption {
+              type = types.str;
+              description = "XDG_CACHE_HOME.";
+            };
+            stateHome = mkOption {
+              type = types.str;
+              description = "XDG_STATE_HOME.";
+            };
           };
         };
       };
@@ -86,7 +103,8 @@ mkFeature {
       };
     };
 
-  nixos = { config, pkgs, ... }:
+  nixos =
+    { config, pkgs, ... }:
     let
       wayland = config.globals.wayland;
     in
@@ -95,14 +113,19 @@ mkFeature {
 
       xdg.portal = {
         enable = true;
-        extraPortals = [ pkgs.xdg-desktop-portal-gtk ]
-          ++ lib.optional wayland pkgs.xdg-desktop-portal-wlr;
+        extraPortals = [ pkgs.xdg-desktop-portal-gtk ] ++ lib.optional wayland pkgs.xdg-desktop-portal-wlr;
         config.common.default = [ "gtk" ] ++ lib.optional wayland "wlr";
         wlr.enable = wayland;
       };
     };
 
-  home = { config, lib, pkgs, ... }:
+  home =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = config.features.xdg;
       activeDirs = lib.filterAttrs (_: v: v != null) cfg.userDirs;
@@ -139,12 +162,9 @@ mkFeature {
           XDG_VIDEOS_DIR = cfg.userDirs.videos or null;
         };
 
-        home.activation.createXdgUserDirs =
-          lib.hm.dag.entryAfter [ "writeBoundary" ] (
-            lib.concatMapStringsSep "\n"
-              (d: "run mkdir -p ${lib.escapeShellArg d}")
-              (lib.attrValues activeDirs)
-          );
+        home.activation.createXdgUserDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] (
+          lib.concatMapStringsSep "\n" (d: "run mkdir -p ${lib.escapeShellArg d}") (lib.attrValues activeDirs)
+        );
       })
     ];
 }

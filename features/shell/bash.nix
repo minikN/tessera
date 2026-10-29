@@ -27,47 +27,58 @@ mkFeature {
     keybindings = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = { };
-      example = { "\\e[A" = "history-search-backward"; };
+      example = {
+        "\\e[A" = "history-search-backward";
+      };
       description = "Readline keybindings (key sequence = function), written to ~/.inputrc.";
     };
   };
 
   globals = { config, ... }: {
-    apps.shell = lib.mkIf
-      (config.features.bash.enable && !config.features.zsh.enable)
-      "${config.features.bash.package}/bin/bash";
+    apps.shell = lib.mkIf (
+      config.features.bash.enable && !config.features.zsh.enable
+    ) "${config.features.bash.package}/bin/bash";
   };
 
-  home = { config, lib, pkgs, ... }: {
-    assertions = [{
-      assertion = !(config.features.bash.enable && config.features.zsh.enable);
-      message = "features.bash and features.zsh cannot both be enabled. Pick one.";
-    }];
+  home =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    {
+      assertions = [
+        {
+          assertion = !(config.features.bash.enable && config.features.zsh.enable);
+          message = "features.bash and features.zsh cannot both be enabled. Pick one.";
+        }
+      ];
 
-    features.ls.enable = lib.mkDefault true;
+      features.ls.enable = lib.mkDefault true;
 
-    home.packages = [
-      config.features.bash.package
-      pkgs.bash-completion
-    ];
+      home.packages = [
+        config.features.bash.package
+        pkgs.bash-completion
+      ];
 
-    programs.bash = {
-      enable = true;
-      historyFile = "${config.xdg.stateHome}/bash/history";
-      profileExtra = config.features.bash.extraConfig;
-      bashrcExtra = ''
-        [[ $- == *i* && -r ${pkgs.bash-completion}/etc/profile.d/bash_completion.sh ]] && \
-          source ${pkgs.bash-completion}/etc/profile.d/bash_completion.sh
-      '';
+      programs.bash = {
+        enable = true;
+        historyFile = "${config.xdg.stateHome}/bash/history";
+        profileExtra = config.features.bash.extraConfig;
+        bashrcExtra = ''
+          [[ $- == *i* && -r ${pkgs.bash-completion}/etc/profile.d/bash_completion.sh ]] && \
+            source ${pkgs.bash-completion}/etc/profile.d/bash_completion.sh
+        '';
+      };
+
+      programs.readline = lib.mkIf (config.features.bash.keybindings != { }) {
+        enable = true;
+        bindings = config.features.bash.keybindings;
+      };
+
+      home.activation.createBashHistoryDir = lib.hm.dag.entryAfter [
+        "writeBoundary"
+      ] "run mkdir -p ${lib.escapeShellArg "${config.xdg.stateHome}/bash"}";
     };
-
-    programs.readline = lib.mkIf (config.features.bash.keybindings != { }) {
-      enable = true;
-      bindings = config.features.bash.keybindings;
-    };
-
-    home.activation.createBashHistoryDir =
-      lib.hm.dag.entryAfter [ "writeBoundary" ]
-        "run mkdir -p ${lib.escapeShellArg "${config.xdg.stateHome}/bash"}";
-  };
 }

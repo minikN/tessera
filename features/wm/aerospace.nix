@@ -1,4 +1,9 @@
-{ lib, mkFeature, tessera, ... }:
+{
+  lib,
+  mkFeature,
+  tessera,
+  ...
+}:
 
 mkFeature {
   name = "aerospace";
@@ -38,7 +43,8 @@ mkFeature {
     '';
   };
 
-  options = { config, pkgs, ... }:
+  options =
+    { config, pkgs, ... }:
     let
       inherit (lib) mkOption mkPackageOption types;
       cfg = config.features.aerospace;
@@ -50,15 +56,42 @@ mkFeature {
         default = "cmd";
         description = "Modifier that AeroSpace keys are bound to.";
       };
-      left = mkOption { type = types.str; default = "left"; description = "Key for the left orientation."; };
-      right = mkOption { type = types.str; default = "right"; description = "Key for the right orientation."; };
-      up = mkOption { type = types.str; default = "up"; description = "Key for the up orientation."; };
-      down = mkOption { type = types.str; default = "down"; description = "Key for the down orientation."; };
+      left = mkOption {
+        type = types.str;
+        default = "left";
+        description = "Key for the left orientation.";
+      };
+      right = mkOption {
+        type = types.str;
+        default = "right";
+        description = "Key for the right orientation.";
+      };
+      up = mkOption {
+        type = types.str;
+        default = "up";
+        description = "Key for the up orientation.";
+      };
+      down = mkOption {
+        type = types.str;
+        default = "down";
+        description = "Key for the down orientation.";
+      };
 
       keybindings = mkOption {
         type = tessera.types.keybindings (types.either types.str (types.listOf types.str));
         default = { };
-        apply = f: f { inherit (cfg) modifier left right up down; inherit (config.globals) apps; };
+        apply =
+          f:
+          f {
+            inherit (cfg)
+              modifier
+              left
+              right
+              up
+              down
+              ;
+            inherit (config.globals) apps;
+          };
         description = "Keybindings merged over the defaults: an attrset, or a function of `{ modifier, left, right, up, down, apps, ... }`.";
       };
 
@@ -69,15 +102,16 @@ mkFeature {
       };
     };
 
-  globals = { config, ... }:
+  globals =
+    { config, ... }:
     {
       ## Consumed as the global WM. Gated on enable so it isn't forced on
       ## hosts where aerospace is off (pkgs.aerospace is darwin-only).
-      apps.wm = lib.mkIf config.features.aerospace.enable
-        "${config.features.aerospace.package}/Applications/AeroSpace.app";
+      apps.wm = lib.mkIf config.features.aerospace.enable "${config.features.aerospace.package}/Applications/AeroSpace.app";
     };
 
-  home = { config, lib, ... }:
+  home =
+    { config, lib, ... }:
     with config.features.aerospace;
     {
       programs.aerospace = {
@@ -100,11 +134,30 @@ mkFeature {
           automatically-unhide-macos-hidden-apps = true;
 
           gaps = {
-            inner = { horizontal = 12; vertical = 12; };
-            outer = { left = 12; right = 12; top = 12; bottom = 12; };
+            inner = {
+              horizontal = 12;
+              vertical = 12;
+            };
+            outer = {
+              left = 12;
+              right = 12;
+              top = 12;
+              bottom = 12;
+            };
           };
 
-          persistent-workspaces = [ "1" "2" "3" "4" "5" "6" "7" "8" "9" "0" ];
+          persistent-workspaces = [
+            "1"
+            "2"
+            "3"
+            "4"
+            "5"
+            "6"
+            "7"
+            "8"
+            "9"
+            "0"
+          ];
 
           mode.main.binding =
             with config.globals.apps;

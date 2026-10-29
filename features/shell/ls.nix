@@ -15,7 +15,13 @@ mkFeature {
     '';
   };
 
-  home = { config, lib, pkgs, ... }:
+  home =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       isDarwin = config.globals.platform == "darwin";
       binary = if isDarwin then "gls" else "ls";

@@ -1,7 +1,11 @@
 { lib }:
 
 ## Evaluate the options of `features` with mocked user options
-{ pkgs, features, platform ? "nixos" }:
+{
+  pkgs,
+  features,
+  platform ? "nixos",
+}:
 
 lib.evalModules {
   modules = [
@@ -16,5 +20,9 @@ lib.evalModules {
         stateVersion = lib.trivial.release;
       };
     }
-  ] ++ map (f: { _file = f.file or "<unknown>"; imports = [ f.commonModule ]; }) features;
+  ]
+  ++ map (f: {
+    _file = f.file or "<unknown>";
+    imports = [ f.commonModule ];
+  }) features;
 }

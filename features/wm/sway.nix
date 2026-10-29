@@ -1,4 +1,9 @@
-{ lib, mkFeature, tessera, ... }:
+{
+  lib,
+  mkFeature,
+  tessera,
+  ...
+}:
 
 mkFeature {
   name = "sway";
@@ -46,9 +51,15 @@ mkFeature {
     '';
   };
 
-  options = { config, pkgs, ... }:
+  options =
+    { config, pkgs, ... }:
     let
-      inherit (lib) mkEnableOption mkOption mkPackageOption types;
+      inherit (lib)
+        mkEnableOption
+        mkOption
+        mkPackageOption
+        types
+        ;
       cfg = config.features.sway;
     in
     {
@@ -60,10 +71,26 @@ mkFeature {
         description = "Modifier key (Mod4 = Super).";
       };
 
-      left  = mkOption { type = types.str; default = "h"; description = "Key for `left`."; };
-      right = mkOption { type = types.str; default = "l"; description = "Key for `right`."; };
-      up    = mkOption { type = types.str; default = "k"; description = "Key for `up`."; };
-      down  = mkOption { type = types.str; default = "j"; description = "Key for `down`."; };
+      left = mkOption {
+        type = types.str;
+        default = "h";
+        description = "Key for `left`.";
+      };
+      right = mkOption {
+        type = types.str;
+        default = "l";
+        description = "Key for `right`.";
+      };
+      up = mkOption {
+        type = types.str;
+        default = "k";
+        description = "Key for `up`.";
+      };
+      down = mkOption {
+        type = types.str;
+        default = "j";
+        description = "Key for `down`.";
+      };
 
       useGlobalBar = mkEnableOption "sway-spawned global bar";
 
@@ -76,7 +103,18 @@ mkFeature {
       keybindings = mkOption {
         type = tessera.types.keybindings types.str;
         default = { };
-        apply = f: f { inherit (cfg) modifier left right up down; inherit (config.globals) apps; };
+        apply =
+          f:
+          f {
+            inherit (cfg)
+              modifier
+              left
+              right
+              up
+              down
+              ;
+            inherit (config.globals) apps;
+          };
         description = "Keybindings merged over the defaults: an attrset, or a function of `{ modifier, left, right, up, down, apps, ... }`.";
       };
 
@@ -87,7 +125,8 @@ mkFeature {
       };
     };
 
-  globals = { config, ... }:
+  globals =
+    { config, ... }:
     let
       cfg = config.features.sway;
     in
@@ -100,10 +139,16 @@ mkFeature {
   nixos = _: {
     hardware.graphics.enable = true;
     security.polkit.enable = true;
-    environment.sessionVariables.NIXOS_OZONE_WL = "1";  ## chromium/electron → wayland
+    environment.sessionVariables.NIXOS_OZONE_WL = "1"; # # chromium/electron → wayland
   };
 
-  home = { config, lib, pkgs, ... }:
+  home =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = config.features.sway;
       apps = config.globals.apps;
@@ -117,7 +162,10 @@ mkFeature {
         systemd.enable = true;
       };
 
-      home.packages = with pkgs; [ wl-clipboard wtype ];
+      home.packages = with pkgs; [
+        wl-clipboard
+        wtype
+      ];
 
       wayland.windowManager.sway = {
         enable = true;
@@ -138,102 +186,124 @@ mkFeature {
           export _JAVA_AWT_WM_NONREPARENTING=1
         '';
 
-        config = lib.recursiveUpdate
-          {
-            inherit (cfg) modifier left right up down;
-            defaultWorkspace = "workspace number 1";
+        config = lib.recursiveUpdate {
+          inherit (cfg)
+            modifier
+            left
+            right
+            up
+            down
+            ;
+          defaultWorkspace = "workspace number 1";
 
-            input = {
-              "type:keyboard" = {
-                xkb_layout = kbd.name;
-                xkb_options = lib.concatStringsSep "," kbd.options;
-              }
-              // lib.optionalAttrs (kbd.variant != "") {
-                xkb_variant = kbd.variant;
-              };
-              "type:touchpad" = {
-                dwt = "enabled";
-                tap = "enabled";
-                middle_emulation = "enabled";
-              };
+          input = {
+            "type:keyboard" = {
+              xkb_layout = kbd.name;
+              xkb_options = lib.concatStringsSep "," kbd.options;
+            }
+            // lib.optionalAttrs (kbd.variant != "") {
+              xkb_variant = kbd.variant;
             };
-
-            output."*".bg =
-              if config.features.theme.wallpaper == null
-              then "${hex.base00} solid_color"
-              else "${toString config.features.theme.wallpaper} fill";
-
-            seat."*".xcursor_theme = "${cursor.name} ${toString config.features.gtk.cursorSize}";
-
-            floating = {
-              titlebar = false;
-              border = 2;
+            "type:touchpad" = {
+              dwt = "enabled";
+              tap = "enabled";
+              middle_emulation = "enabled";
             };
+          };
 
-            ## base0D for focused; ordenada brightens/darkens via nix-rice.
-            colors =
-              let
-                bg = hex.base00;
-                focused = hex.base0D;
-                unfocused = hex.base01;
-                text = hex.base05;
-                urgent = hex.base08;
-                shared = {
-                  background = bg;
-                  indicator = focused;
-                  inherit text;
-                };
-              in
-              {
+          output."*".bg =
+            if config.features.theme.wallpaper == null then
+              "${hex.base00} solid_color"
+            else
+              "${toString config.features.theme.wallpaper} fill";
+
+          seat."*".xcursor_theme = "${cursor.name} ${toString config.features.gtk.cursorSize}";
+
+          floating = {
+            titlebar = false;
+            border = 2;
+          };
+
+          ## base0D for focused; ordenada brightens/darkens via nix-rice.
+          colors =
+            let
+              bg = hex.base00;
+              focused = hex.base0D;
+              unfocused = hex.base01;
+              text = hex.base05;
+              urgent = hex.base08;
+              shared = {
                 background = bg;
-                urgent = shared // { border = urgent; childBorder = urgent; };
-                focused = shared // { border = focused; childBorder = focused; };
-                focusedInactive = shared // { border = unfocused; childBorder = unfocused; };
-                unfocused = shared // { border = unfocused; childBorder = unfocused; };
-                placeholder = shared // { border = unfocused; childBorder = unfocused; };
+                indicator = focused;
+                inherit text;
               };
-
-            window = {
-              titlebar = false;
-              border = 2;
+            in
+            {
+              background = bg;
+              urgent = shared // {
+                border = urgent;
+                childBorder = urgent;
+              };
+              focused = shared // {
+                border = focused;
+                childBorder = focused;
+              };
+              focusedInactive = shared // {
+                border = unfocused;
+                childBorder = unfocused;
+              };
+              unfocused = shared // {
+                border = unfocused;
+                childBorder = unfocused;
+              };
+              placeholder = shared // {
+                border = unfocused;
+                childBorder = unfocused;
+              };
             };
 
-            gaps = {
-              inner = 12;
-              smartBorders = "on";
-              smartGaps = true;
-            };
+          window = {
+            titlebar = false;
+            border = 2;
+          };
 
-            bars = lib.optional cfg.useGlobalBar (
-              {
-                command = apps.bar;
-                mode = "dock";
-                extraConfig = "modifier none";
-              }
-              // cfg.extraGlobalBarSettings
-            );
+          gaps = {
+            inner = 12;
+            smartBorders = "on";
+            smartGaps = true;
+          };
 
-            startup = map (command: { inherit command; always = true; })
-              config.globals.autoloads;
+          bars = lib.optional cfg.useGlobalBar (
+            {
+              command = apps.bar;
+              mode = "dock";
+              extraConfig = "modifier none";
+            }
+            // cfg.extraGlobalBarSettings
+          );
 
-            keybindings = lib.mkOptionDefault (
-              { }
-              // lib.optionalAttrs (apps.launcher != null) {
-                "${cfg.modifier}+d" = "exec ${apps.launcher}";
-              }
-              // lib.optionalAttrs (apps.terminal != null) {
-                "${cfg.modifier}+Return" = "exec ${apps.terminal}";
-              }
-              // lib.optionalAttrs (apps.passwordManager != null) {
-                "${cfg.modifier}+p" = "exec ${apps.passwordManager}";
-              }
-              // lib.optionalAttrs cfg.useGlobalBar {
-                "${cfg.modifier}+b" = "bar mode toggle";
-              }
-              // cfg.keybindings
-            );
-          }
-          cfg.extraConfig;
+          startup = map (command: {
+            inherit command;
+            always = true;
+          }) config.globals.autoloads;
+
+          keybindings = lib.mkOptionDefault (
+            { }
+            // lib.optionalAttrs (apps.launcher != null) {
+              "${cfg.modifier}+d" = "exec ${apps.launcher}";
+            }
+            // lib.optionalAttrs (apps.terminal != null) {
+              "${cfg.modifier}+Return" = "exec ${apps.terminal}";
+            }
+            // lib.optionalAttrs (apps.passwordManager != null) {
+              "${cfg.modifier}+p" = "exec ${apps.passwordManager}";
+            }
+            // lib.optionalAttrs cfg.useGlobalBar {
+              "${cfg.modifier}+b" = "bar mode toggle";
+            }
+            // cfg.keybindings
+          );
+        } cfg.extraConfig;
       };
     };
 }

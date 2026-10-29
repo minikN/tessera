@@ -16,13 +16,12 @@ mkFeature {
     '';
   };
 
-  options = { config, pkgs, ... }:
+  options =
+    { config, pkgs, ... }:
     let
       inherit (lib) mkOption types;
       passPkg =
-        if config.globals.wayland && config.globals.platform == "nixos"
-        then "pass-wayland"
-        else "pass";
+        if config.globals.wayland && config.globals.platform == "nixos" then "pass-wayland" else "pass";
     in
     {
       package = mkOption {
@@ -40,7 +39,8 @@ mkFeature {
       };
     };
 
-  home = { config, ... }:
+  home =
+    { config, ... }:
     let
       cfg = config.features.password-store;
     in

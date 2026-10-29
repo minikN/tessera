@@ -10,17 +10,43 @@ let
   setsOf = import ./sets.nix { inherit lib; };
   evalDocs = import ./eval-docs.nix { inherit lib; };
 
-  helpers = { inherit mkFeature mkElispConfig; tessera = { inherit types; }; };
+  helpers = {
+    inherit mkFeature mkElispConfig;
+    tessera = { inherit types; };
+  };
   features = discover.discoverFeatures ../features helpers;
 
   mkFlake = import ./mk-flake.nix {
-    inherit lib helpers features mkHost;
+    inherit
+      lib
+      helpers
+      features
+      mkHost
+      ;
     tesseraInputs = inputs;
     inherit (discover) discoverFeatures discoverHosts;
   };
-  mkDocs = import ./mk-docs.nix { inherit lib inputs evalDocs setsOf; };
+  mkDocs = import ./mk-docs.nix {
+    inherit
+      lib
+      inputs
+      evalDocs
+      setsOf
+      ;
+  };
 in
 {
-  inherit mkFeature mkHost mkSchemeAttrs mkElispConfig mkFlake mkDocs types setsOf evalDocs features;
+  inherit
+    mkFeature
+    mkHost
+    mkSchemeAttrs
+    mkElispConfig
+    mkFlake
+    mkDocs
+    types
+    setsOf
+    evalDocs
+    features
+    ;
   inherit (discover) discoverFeatures discoverHosts;
 }

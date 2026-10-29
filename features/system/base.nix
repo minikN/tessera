@@ -49,6 +49,8 @@ mkFeature {
 
   darwin = { config, pkgs, ... }: {
     time.timeZone = config.features.base.timeZone;
-    nix = sharedNix // { package = pkgs.lix; };
+    nix = sharedNix // {
+      package = pkgs.lix;
+    };
   };
 }

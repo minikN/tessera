@@ -10,7 +10,10 @@ in
       description = "Static globals from globals.nix.";
     };
     platform = mkOption {
-      type = types.enum [ "nixos" "darwin" ];
+      type = types.enum [
+        "nixos"
+        "darwin"
+      ];
       description = "Host platform.";
     };
     wayland = mkOption {
@@ -19,13 +22,41 @@ in
       description = "Host runs a Wayland session.";
     };
     apps = {
-      shell           = mkOption { type = types.nullOr types.str; default = null; description = "System shell."; };
-      terminal        = mkOption { type = types.nullOr types.str; default = null; description = "System terminal."; };
-      editor          = mkOption { type = types.nullOr types.str; default = null; description = "System editor."; };
-      wm              = mkOption { type = types.nullOr types.str; default = null; description = "System window manager."; };
-      launcher        = mkOption { type = types.nullOr types.str; default = null; description = "System app launcher."; };
-      bar             = mkOption { type = types.nullOr types.str; default = null; description = "System status bar."; };
-      passwordManager = mkOption { type = types.nullOr types.str; default = null; description = "System password manager."; };
+      shell = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "System shell.";
+      };
+      terminal = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "System terminal.";
+      };
+      editor = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "System editor.";
+      };
+      wm = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "System window manager.";
+      };
+      launcher = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "System app launcher.";
+      };
+      bar = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "System status bar.";
+      };
+      passwordManager = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "System password manager.";
+      };
     };
 
     autoloads = mkOption {

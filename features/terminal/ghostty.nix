@@ -27,36 +27,42 @@ mkFeature {
   options = { config, pkgs, ... }: {
     package = lib.mkOption {
       type = lib.types.package;
-      default =
-        if config.globals.platform == "darwin"
-        then pkgs.ghostty-bin
-        else pkgs.ghostty;
+      default = if config.globals.platform == "darwin" then pkgs.ghostty-bin else pkgs.ghostty;
       defaultText = lib.literalExpression "ghostty-bin on darwin, ghostty on linux";
       description = "Ghostty package for the current platform.";
     };
     settings = lib.mkOption {
       type = lib.types.attrs;
       default = { };
-      example = { font-size = 14; cursor-style = "bar"; };
+      example = {
+        font-size = 14;
+        cursor-style = "bar";
+      };
       description = "Extra settings merged into `programs.ghostty.settings` (override defaults).";
     };
     keybindings = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = { };
-      example = { "ctrl+shift+t" = "new_tab"; };
+      example = {
+        "ctrl+shift+t" = "new_tab";
+      };
       description = "Keybindings (trigger = action) added to Ghostty's defaults.";
     };
   };
 
   globals = { config, ... }: {
-    apps.terminal = lib.mkIf config.features.ghostty.enable (lib.mkForce (
-      if config.globals.platform == "darwin"
-      then "${config.features.ghostty.package}/Applications/Ghostty.app/Contents/MacOS/ghostty"
-      else "${config.features.ghostty.package}/bin/ghostty"
-    ));
+    apps.terminal = lib.mkIf config.features.ghostty.enable (
+      lib.mkForce (
+        if config.globals.platform == "darwin" then
+          "${config.features.ghostty.package}/Applications/Ghostty.app/Contents/MacOS/ghostty"
+        else
+          "${config.features.ghostty.package}/bin/ghostty"
+      )
+    );
   };
 
-  home = { config, ... }:
+  home =
+    { config, ... }:
     let
       font = config.features.font;
       mono = font.fonts.monospace;
@@ -74,7 +80,8 @@ mkFeature {
           window-padding-y = 8;
 
           shell-integration-features = "ssh-env,ssh-terminfo";
-        } // lib.optionalAttrs font.enable {
+        }
+        // lib.optionalAttrs font.enable {
           font-family = mono.name;
           font-style = "Regular";
 
@@ -88,10 +95,13 @@ mkFeature {
           font-style-bold-italic = "Bold Italic";
 
           font-size = mono.size;
-        } // lib.optionalAttrs (config.features.ghostty.keybindings != { }) {
-          keybind = lib.mapAttrsToList (trigger: action: "${trigger}=${action}")
-            config.features.ghostty.keybindings;
-        } // config.features.ghostty.settings;
+        }
+        // lib.optionalAttrs (config.features.ghostty.keybindings != { }) {
+          keybind = lib.mapAttrsToList (
+            trigger: action: "${trigger}=${action}"
+          ) config.features.ghostty.keybindings;
+        }
+        // config.features.ghostty.settings;
 
         themes.tessera = with hex; {
           background = base00;

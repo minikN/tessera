@@ -62,9 +62,10 @@ mkFeature {
       type = types.str;
       defaultText = lib.literalMD "`/Users/<username>` on macOS, `/home/<username>` on Linux";
       default =
-        if config.globals.platform == "darwin"
-        then "/Users/${config.features.user.username}"
-        else "/home/${config.features.user.username}";
+        if config.globals.platform == "darwin" then
+          "/Users/${config.features.user.username}"
+        else
+          "/home/${config.features.user.username}";
       description = "Home directory.";
     };
     extraGroups = mkOption {

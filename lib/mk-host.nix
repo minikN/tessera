@@ -1,10 +1,11 @@
 { lib }:
 
-{ inputs
-, globals
-, features
-, name
-, file
+{
+  inputs,
+  globals,
+  features,
+  name,
+  file,
 }:
 
 let
@@ -21,10 +22,11 @@ let
   hostHome = hostDef.home or { };
 
   hardwareModule = {
-    imports = map
-      (profile: inputs.nixos-hardware.nixosModules.${profile} or (throw
-        "host ${name}: unknown hardware profile '${profile}'; see the flake output `hardwareProfiles`"))
-      (hostDef.hardware or [ ]);
+    imports = map (
+      profile:
+      inputs.nixos-hardware.nixosModules.${profile}
+        or (throw "host ${name}: unknown hardware profile '${profile}'; see the flake output `hardwareProfiles`")
+    ) (hostDef.hardware or [ ]);
   };
 
   user = globals.user;
@@ -37,13 +39,19 @@ let
   };
 
   hostFeaturesModule = args: {
-    config.features =
-      if builtins.isFunction hostFeatures then hostFeatures args else hostFeatures;
+    config.features = if builtins.isFunction hostFeatures then hostFeatures args else hostFeatures;
   };
 
-  featureChecks = { config, options, pkgs, ... }: {
-    assertions = builtins.concatMap (f: f.checks platform { inherit config options pkgs; }) features;
-  };
+  featureChecks =
+    {
+      config,
+      options,
+      pkgs,
+      ...
+    }:
+    {
+      assertions = builtins.concatMap (f: f.checks platform { inherit config options pkgs; }) features;
+    };
 
   filterNonNull = builtins.filter (m: m != null);
 
@@ -79,7 +87,15 @@ let
   ]
   ++ commonFeatureModules
   ++ (if platform == "nixos" then nixosFeatureModules else darwinFeatureModules)
-  ++ (if platform == "nixos" then [ hostNixos hardwareModule ] else [ hostDarwin ]);
+  ++ (
+    if platform == "nixos" then
+      [
+        hostNixos
+        hardwareModule
+      ]
+    else
+      [ hostDarwin ]
+  );
 
   systemConfig =
     if platform == "nixos" then
@@ -89,7 +105,8 @@ let
         modules = [
           inputs.home-manager.nixosModules.home-manager
           { system.stateVersion = mkDefault globals.stateVersion; }
-        ] ++ systemModules;
+        ]
+        ++ systemModules;
       }
     else
       inputs.darwin.lib.darwinSystem {
@@ -98,7 +115,8 @@ let
         modules = [
           inputs.home-manager.darwinModules.home-manager
           { system.stateVersion = mkDefault 6; }
-        ] ++ systemModules;
+        ]
+        ++ systemModules;
       };
 
   homeConfig = inputs.home-manager.lib.homeManagerConfiguration {
@@ -111,5 +129,11 @@ let
   };
 in
 {
-  inherit name platform system systemConfig homeConfig;
+  inherit
+    name
+    platform
+    system
+    systemConfig
+    homeConfig
+    ;
 }
