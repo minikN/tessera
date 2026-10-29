@@ -1,10 +1,18 @@
-{ lib, mkFeature, mkElispConfig, ... }:
+{
+  lib,
+  mkFeature,
+  mkElispConfig,
+  ...
+}:
 
 let
   inherit (lib) mkOption types;
 in
 mkFeature {
-  name = [ "emacs" "keymaps" ];
+  name = [
+    "emacs"
+    "keymaps"
+  ];
 
   doc = {
     summary = "Prefix keymaps that make every Emacs feature's keys predictable.";
@@ -106,7 +114,13 @@ mkFeature {
     };
   };
 
-  home = { config, lib, pkgs, ... }:
+  home =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = config.features.emacs.keymaps;
     in

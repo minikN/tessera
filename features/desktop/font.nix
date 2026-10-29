@@ -25,7 +25,8 @@ mkFeature {
     '';
   };
 
-  options = { config, pkgs, ... }:
+  options =
+    { config, pkgs, ... }:
     let
       inherit (lib) mkOption types;
       fontModule = types.submodule {
@@ -82,14 +83,29 @@ mkFeature {
           ## afdko build is broken on aarch64-darwin.
           defaultText = lib.literalMD "Apple Color Emoji (shipped with macOS) on macOS, Noto Color Emoji (`pkgs.noto-fonts-color-emoji`) on Linux; size 11";
           default =
-            if config.globals.platform == "darwin"
-            then { name = "Apple Color Emoji"; package = null; size = 11; }
-            else { name = "Noto Color Emoji"; package = pkgs.noto-fonts-color-emoji; size = 11; };
+            if config.globals.platform == "darwin" then
+              {
+                name = "Apple Color Emoji";
+                package = null;
+                size = 11;
+              }
+            else
+              {
+                name = "Noto Color Emoji";
+                package = pkgs.noto-fonts-color-emoji;
+                size = 11;
+              };
         };
       };
     };
 
-  home = { config, lib, pkgs, ... }:
+  home =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = config.features.font.fonts;
     in
@@ -104,14 +120,17 @@ mkFeature {
         };
       };
 
-      home.packages = lib.filter (p: p != null) (with pkgs; [
-        cfg.monospace.package
-        cfg.serif.package
-        cfg.sans.package
-        cfg.unicode.package
-        dejavu_fonts
-        unifont
-        font-awesome
-      ]);
+      home.packages = lib.filter (p: p != null) (
+        with pkgs;
+        [
+          cfg.monospace.package
+          cfg.serif.package
+          cfg.sans.package
+          cfg.unicode.package
+          dejavu_fonts
+          unifont
+          font-awesome
+        ]
+      );
     };
 }

@@ -2,7 +2,8 @@
 
 let
   ## rasi theme. mkLiteral comes from home-manager (config.lib.formats.rasi).
-  mkTheme = config:
+  mkTheme =
+    config:
     let
       mkLiteral = config.lib.formats.rasi.mkLiteral;
     in
@@ -58,20 +59,37 @@ let
         padding = mkLiteral "8px";
         spacing = mkLiteral "8px";
       };
-      "element normal normal" = { text-color = mkLiteral "@fg0"; };
-      "element normal urgent" = { text-color = mkLiteral "@urgent-color"; };
-      "element normal active" = { text-color = mkLiteral "@fg0"; };
-      "element alternate active" = { text-color = mkLiteral "@fg0"; };
-      "element selected" = { text-color = mkLiteral "@fg0"; };
+      "element normal normal" = {
+        text-color = mkLiteral "@fg0";
+      };
+      "element normal urgent" = {
+        text-color = mkLiteral "@urgent-color";
+      };
+      "element normal active" = {
+        text-color = mkLiteral "@fg0";
+      };
+      "element alternate active" = {
+        text-color = mkLiteral "@fg0";
+      };
+      "element selected" = {
+        text-color = mkLiteral "@fg0";
+      };
       "element selected normal, element selected active" = {
         background-color = mkLiteral "@bg1";
       };
-      "element selected urgent" = { background-color = mkLiteral "@urgent-color"; };
-      "element-icon" = { size = mkLiteral "0.8em"; };
-      "element-text" = { text-color = mkLiteral "inherit"; };
+      "element selected urgent" = {
+        background-color = mkLiteral "@urgent-color";
+      };
+      "element-icon" = {
+        size = mkLiteral "0.8em";
+      };
+      "element-text" = {
+        text-color = mkLiteral "inherit";
+      };
     };
 
-  mkSettings = config:
+  mkSettings =
+    config:
     with config.features.rofi;
     {
       modi = "run,ssh,drun";
@@ -116,7 +134,8 @@ mkFeature {
     '';
   };
 
-  options = { config, pkgs, ... }:
+  options =
+    { config, pkgs, ... }:
     let
       inherit (lib) mkOption mkPackageOption types;
       enabled = config.features.rofi.enable;
@@ -154,12 +173,15 @@ mkFeature {
       keybindings = mkOption {
         type = types.attrsOf types.str;
         default = { };
-        example = { kb-row-select = "Tab"; };
+        example = {
+          kb-row-select = "Tab";
+        };
         description = "Keybindings (rofi's `kb-*` settings) merged over the defaults.";
       };
     };
 
-  globals = { config, pkgs, ... }:
+  globals =
+    { config, pkgs, ... }:
     let
       cfg = config.features.rofi;
       pass = config.features.password-store.package;
@@ -178,7 +200,15 @@ mkFeature {
       ## X11
       rofiPass = pkgs.writeShellApplication {
         name = "rofi-pass";
-        runtimeInputs = with pkgs; [ cfg.package pass xclip findutils gnugrep gnused coreutils ];
+        runtimeInputs = with pkgs; [
+          cfg.package
+          pass
+          xclip
+          findutils
+          gnugrep
+          gnused
+          coreutils
+        ];
         text = ''
           ${env}
           menu () { rofi -dmenu -i -no-auto-select -p "$1"; }
@@ -201,15 +231,15 @@ mkFeature {
       };
     in
     {
-      apps.launcher = lib.mkIf cfg.enableLauncher
-        (lib.mkForce "${cfg.package}/bin/rofi -show drun");
+      apps.launcher = lib.mkIf cfg.enableLauncher (lib.mkForce "${cfg.package}/bin/rofi -show drun");
 
-      apps.passwordManager = lib.mkIf cfg.enablePasswordManager (lib.mkForce (
-        if config.globals.wayland then "${tessen}/bin/tessen" else "${rofiPass}/bin/rofi-pass"
-      ));
+      apps.passwordManager = lib.mkIf cfg.enablePasswordManager (
+        lib.mkForce (if config.globals.wayland then "${tessen}/bin/tessen" else "${rofiPass}/bin/rofi-pass")
+      );
     };
 
-  home = { config, pkgs, ... }:
+  home =
+    { config, pkgs, ... }:
     let
       cfg = config.features.rofi;
     in

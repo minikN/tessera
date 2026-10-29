@@ -60,7 +60,8 @@ mkFeature {
     };
   };
 
-  nixos = { config, ... }:
+  nixos =
+    { config, ... }:
     let
       cfg = config.features.keyboard.layout;
     in
@@ -75,17 +76,18 @@ mkFeature {
       };
     };
 
-  darwin = { config, ... }:
+  darwin =
+    { config, ... }:
     let
       cfg = config.features.keyboard.layout;
     in
     {
       system.keyboard.enableKeyMapping = true;
-      system.keyboard.remapCapsLockToControl =
-        builtins.elem "ctrl:nocaps" cfg.options;
+      system.keyboard.remapCapsLockToControl = builtins.elem "ctrl:nocaps" cfg.options;
     };
 
-  home = { config, ... }:
+  home =
+    { config, ... }:
     let
       cfg = config.features.keyboard.layout;
     in

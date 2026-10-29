@@ -1,7 +1,13 @@
 { lib, mkFeature, ... }:
 
 let
-  inherit (lib) mkDefault mkEnableOption mkIf mkOption types;
+  inherit (lib)
+    mkDefault
+    mkEnableOption
+    mkIf
+    mkOption
+    types
+    ;
 in
 mkFeature {
   name = "ssh";
@@ -46,7 +52,11 @@ mkFeature {
       };
       permitRootLogin = mkOption {
         type = types.enum [
-          "yes" "no" "prohibit-password" "without-password" "forced-commands-only"
+          "yes"
+          "no"
+          "prohibit-password"
+          "without-password"
+          "forced-commands-only"
         ];
         default = "no";
         description = "Value for sshd's PermitRootLogin.";
@@ -68,8 +78,7 @@ mkFeature {
 
   home = { config, ... }: {
     ## Skip ssh-agent when gpg-agent owns the SSH socket.
-    services.ssh-agent.enable =
-      mkDefault (!(config.services.gpg-agent.enableSshSupport or false));
+    services.ssh-agent.enable = mkDefault (!(config.services.gpg-agent.enableSshSupport or false));
 
     programs.ssh = {
       enable = true;
@@ -78,18 +87,20 @@ mkFeature {
     };
   };
 
-  nixos = { config, ... }: mkIf config.features.ssh.daemon.enable {
-    services.openssh = {
-      enable = true;
-      openFirewall = true;
-      settings = {
-        PasswordAuthentication = config.features.ssh.daemon.passwordAuthentication;
-        KbdInteractiveAuthentication = config.features.ssh.daemon.passwordAuthentication;
-        PermitRootLogin = config.features.ssh.daemon.permitRootLogin;
+  nixos =
+    { config, ... }:
+    mkIf config.features.ssh.daemon.enable {
+      services.openssh = {
+        enable = true;
+        openFirewall = true;
+        settings = {
+          PasswordAuthentication = config.features.ssh.daemon.passwordAuthentication;
+          KbdInteractiveAuthentication = config.features.ssh.daemon.passwordAuthentication;
+          PermitRootLogin = config.features.ssh.daemon.permitRootLogin;
+        };
       };
-    };
 
-    users.users.${config.features.user.username}.openssh.authorizedKeys.keyFiles =
-      config.features.ssh.authorizedKeyFiles;
-  };
+      users.users.${config.features.user.username}.openssh.authorizedKeys.keyFiles =
+        config.features.ssh.authorizedKeyFiles;
+    };
 }

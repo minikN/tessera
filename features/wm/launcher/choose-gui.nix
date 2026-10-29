@@ -18,7 +18,8 @@ mkFeature {
     '';
   };
 
-  options = { config, pkgs, ... }:
+  options =
+    { config, pkgs, ... }:
     let
       inherit (lib) mkOption mkPackageOption types;
       enabled = config.features.choose-gui.enable;
@@ -39,7 +40,8 @@ mkFeature {
       };
     };
 
-  globals = { config, pkgs, ... }:
+  globals =
+    { config, pkgs, ... }:
     let
       cfg = config.features.choose-gui;
 
@@ -52,8 +54,7 @@ mkFeature {
           scheme = config.features.theme.scheme;
         in
         "${cfg.package}/bin/choose"
-        + lib.optionalString font.enable
-          " -f ${lib.escapeShellArg mono.name} -s ${toString (mono.size * 3 / 2)}"
+        + lib.optionalString font.enable " -f ${lib.escapeShellArg mono.name} -s ${toString (mono.size * 3 / 2)}"
         + " -c ${scheme.base0D}"
         + " -b ${scheme.base02}";
 
@@ -106,14 +107,15 @@ mkFeature {
       '';
     in
     {
-      apps.launcher = lib.mkIf cfg.enableLauncher
-        (lib.mkForce (toString launcher));
+      apps.launcher = lib.mkIf cfg.enableLauncher (lib.mkForce (toString launcher));
 
-      apps.passwordManager = lib.mkIf cfg.enablePasswordManager
-        (lib.mkForce "${passExec}/bin/choose-pass");
+      apps.passwordManager = lib.mkIf cfg.enablePasswordManager (
+        lib.mkForce "${passExec}/bin/choose-pass"
+      );
     };
 
-  home = { config, ... }:
+  home =
+    { config, ... }:
     {
       home.packages = [ config.features.choose-gui.package ];
     };

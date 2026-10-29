@@ -2,7 +2,10 @@
 
 mkFeature {
   name = "gtk";
-  platforms = [ "home" "nixos" ];
+  platforms = [
+    "home"
+    "nixos"
+  ];
 
   doc = {
     summary = "GTK theme, icons and cursor that follow the light/dark polarity.";
@@ -17,7 +20,8 @@ mkFeature {
     '';
   };
 
-  options = { config, pkgs, ... }:
+  options =
+    { config, pkgs, ... }:
     let
       inherit (lib) mkOption types;
       themeModule = types.submodule {
@@ -39,8 +43,14 @@ mkFeature {
         description = "Built-in light/dark GTK themes (consumed by `theme` default).";
         defaultText = lib.literalExpression ''{ light = { name = "adw-gtk3"; package = pkgs.adw-gtk3; }; dark = { name = "adw-gtk3-dark"; package = pkgs.adw-gtk3; }; }'';
         default = {
-          light = { name = "adw-gtk3";      package = pkgs.adw-gtk3; };
-          dark  = { name = "adw-gtk3-dark"; package = pkgs.adw-gtk3; };
+          light = {
+            name = "adw-gtk3";
+            package = pkgs.adw-gtk3;
+          };
+          dark = {
+            name = "adw-gtk3-dark";
+            package = pkgs.adw-gtk3;
+          };
         };
       };
 
@@ -55,7 +65,10 @@ mkFeature {
         type = themeModule;
         description = "Icon theme.";
         defaultText = lib.literalExpression ''{ name = "Adwaita"; package = pkgs.adwaita-icon-theme; }'';
-        default = { name = "Adwaita"; package = pkgs.adwaita-icon-theme; };
+        default = {
+          name = "Adwaita";
+          package = pkgs.adwaita-icon-theme;
+        };
       };
 
       cursorTheme = mkOption {
@@ -81,13 +94,20 @@ mkFeature {
       };
 
       extraConfig = mkOption {
-        type = with types; attrsOf (oneOf [ bool int str ]);
+        type =
+          with types;
+          attrsOf (oneOf [
+            bool
+            int
+            str
+          ]);
         default = { };
         description = "Extra settings.ini entries for gtk3 + gtk4.";
       };
     };
 
-  home = { config, pkgs, ... }:
+  home =
+    { config, pkgs, ... }:
     let
       cfg = config.features.gtk;
     in
@@ -108,8 +128,10 @@ mkFeature {
         enable = true;
         inherit (cfg) theme iconTheme cursorTheme;
       }
-      // lib.genAttrs [ "gtk3" "gtk4" ] (lib.const {
-        inherit (cfg) extraCss extraConfig;
-      });
+      // lib.genAttrs [ "gtk3" "gtk4" ] (
+        lib.const {
+          inherit (cfg) extraCss extraConfig;
+        }
+      );
     };
 }

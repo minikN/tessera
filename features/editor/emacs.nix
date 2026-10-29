@@ -1,4 +1,9 @@
-{ lib, mkFeature, mkElispConfig, ... }:
+{
+  lib,
+  mkFeature,
+  mkElispConfig,
+  ...
+}:
 
 let
   inherit (lib) mkOption optionalString types;
@@ -45,19 +50,29 @@ mkFeature {
   };
 
   globals = { config, ... }: {
-    apps.editor = lib.mkIf config.features.emacs.enable
-      "${config.features.emacs.package}/bin/emacsclient -c";
+    apps.editor = lib.mkIf config.features.emacs.enable "${config.features.emacs.package}/bin/emacsclient -c";
   };
 
-  home = { config, lib, pkgs, ... }:
+  home =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = config.features.emacs;
       inherit (config.features) font user;
       shell = config.globals.apps.shell;
       stateDir = "${config.xdg.stateHome}/emacs";
       isDarwin = config.globals.platform == "darwin";
-      shellEnvVars = [ "PATH" "MANPATH" "SSH_AUTH_SOCK" "NIX_SSL_CERT_FILE" ]
-        ++ builtins.attrNames config.home.sessionVariables;
+      shellEnvVars = [
+        "PATH"
+        "MANPATH"
+        "SSH_AUTH_SOCK"
+        "NIX_SSL_CERT_FILE"
+      ]
+      ++ builtins.attrNames config.home.sessionVariables;
     in
     lib.mkMerge [
       {
@@ -87,8 +102,7 @@ mkFeature {
       (mkElispConfig pkgs {
         name = "tessera-emacs";
         summary = "Base Emacs configuration";
-        elispPackages = epkgs: [ epkgs.wgrep ]
-          ++ lib.optional isDarwin epkgs.exec-path-from-shell;
+        elispPackages = epkgs: [ epkgs.wgrep ] ++ lib.optional isDarwin epkgs.exec-path-from-shell;
 
         earlyInit = ''
           ;; Defer GC while starting up; restore a sane threshold afterwards.

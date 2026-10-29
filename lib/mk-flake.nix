@@ -1,20 +1,29 @@
-{ lib, helpers, tesseraInputs, mkHost, discoverFeatures, discoverHosts, ... }@tessera:
+{
+  lib,
+  helpers,
+  tesseraInputs,
+  mkHost,
+  discoverFeatures,
+  discoverHosts,
+  ...
+}@tessera:
 
 ## Build every host in `hosts` from tessera's features plus the user's own.
-{ inputs ? { }
-, globals
-, hosts
-, features ? null
+{
+  inputs ? { },
+  globals,
+  hosts,
+  features ? null,
 }:
 
 let
   allInputs = tesseraInputs // inputs;
 
-  allFeatures = tessera.features
-    ++ lib.optionals (features != null) (discoverFeatures features helpers);
+  allFeatures =
+    tessera.features ++ lib.optionals (features != null) (discoverFeatures features helpers);
 
-  builtHosts = builtins.listToAttrs (map
-    (h: {
+  builtHosts = builtins.listToAttrs (
+    map (h: {
       inherit (h) name;
       value = mkHost {
         inputs = allInputs;
@@ -22,12 +31,12 @@ let
         inherit globals;
         inherit (h) name file;
       };
-    })
-    (discoverHosts hosts));
+    }) (discoverHosts hosts)
+  );
 
-  onPlatform = platform:
-    lib.mapAttrs (_: v: v.systemConfig)
-      (lib.filterAttrs (_: v: v.platform == platform) builtHosts);
+  onPlatform =
+    platform:
+    lib.mapAttrs (_: v: v.systemConfig) (lib.filterAttrs (_: v: v.platform == platform) builtHosts);
 in
 {
   nixosConfigurations = onPlatform "nixos";

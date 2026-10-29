@@ -17,20 +17,33 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   };
 
-  outputs = inputs:
+  outputs =
+    inputs:
     let
-      lib = import ./lib { lib = inputs.nixpkgs.lib; inherit inputs; };
-      systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      lib = import ./lib {
+        lib = inputs.nixpkgs.lib;
+        inherit inputs;
+      };
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
+      forAllSystems =
+        f: inputs.nixpkgs.lib.genAttrs systems (system: f inputs.nixpkgs.legacyPackages.${system});
     in
     {
       inherit lib;
       hardwareProfiles = builtins.attrNames inputs.nixos-hardware.nixosModules;
 
-      packages = inputs.nixpkgs.lib.genAttrs systems (system: {
+      packages = forAllSystems (pkgs: {
         docs = lib.mkDocs {
-          pkgs = inputs.nixpkgs.legacyPackages.${system};
+          inherit pkgs;
           inherit (lib) features;
         };
       });
+
+      formatter = forAllSystems (pkgs: pkgs.nixfmt-tree);
     };
 }

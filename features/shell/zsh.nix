@@ -32,25 +32,29 @@ mkFeature {
     keybindings = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = { };
-      example = { "^[[A" = "history-search-backward"; };
+      example = {
+        "^[[A" = "history-search-backward";
+      };
       description = "Keybindings (key sequence = widget), set with `bindkey`.";
     };
   };
 
   globals = { config, ... }: {
-    apps.shell = lib.mkIf
-      (config.features.zsh.enable && !config.features.bash.enable)
-      "${config.features.zsh.package}/bin/zsh";
+    apps.shell = lib.mkIf (
+      config.features.zsh.enable && !config.features.bash.enable
+    ) "${config.features.zsh.package}/bin/zsh";
   };
 
   ## Needed so home.autostartWmOnTTY works (writes /etc/zprofile).
   nixos = _: { programs.zsh.enable = true; };
 
   home = { config, ... }: {
-    assertions = [{
-      assertion = !(config.features.bash.enable && config.features.zsh.enable);
-      message = "features.bash and features.zsh cannot both be enabled. Pick one.";
-    }];
+    assertions = [
+      {
+        assertion = !(config.features.bash.enable && config.features.zsh.enable);
+        message = "features.bash and features.zsh cannot both be enabled. Pick one.";
+      }
+    ];
 
     features.ls.enable = lib.mkDefault true;
 
@@ -62,10 +66,13 @@ mkFeature {
       dotDir = "${config.xdg.configHome}/zsh";
       history.path = "${config.xdg.stateHome}/zsh/history";
       profileExtra = config.features.zsh.extraConfig;
-      initContent = lib.mkIf (config.features.zsh.keybindings != { })
-        (lib.concatStringsSep "\n" (lib.mapAttrsToList
-          (key: widget: "bindkey ${lib.escapeShellArg key} ${widget}")
-          config.features.zsh.keybindings));
+      initContent = lib.mkIf (config.features.zsh.keybindings != { }) (
+        lib.concatStringsSep "\n" (
+          lib.mapAttrsToList (
+            key: widget: "bindkey ${lib.escapeShellArg key} ${widget}"
+          ) config.features.zsh.keybindings
+        )
+      );
     };
   };
 }

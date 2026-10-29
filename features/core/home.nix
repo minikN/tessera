@@ -1,7 +1,12 @@
 { lib, mkFeature, ... }:
 
 let
-  inherit (lib) mkIf mkMerge mkOption types;
+  inherit (lib)
+    mkIf
+    mkMerge
+    mkOption
+    types
+    ;
 in
 mkFeature {
   name = "home";
@@ -53,7 +58,8 @@ mkFeature {
     };
   };
 
-  nixos = { config, ... }:
+  nixos =
+    { config, ... }:
     let
       shell = config.globals.apps.shell;
       wm = config.globals.apps.wm;
@@ -69,7 +75,8 @@ mkFeature {
       '';
     };
 
-  darwin = { config, ... }:
+  darwin =
+    { config, ... }:
     let
       shell = config.globals.apps.shell;
       user = config.features.user.username;
@@ -82,7 +89,11 @@ mkFeature {
 
       ## chsh as root every activation — nix can't change macOS login shells.
       launchd.daemons.defaultShell = {
-        path = [ "/bin" "/usr/bin" "/usr/local/bin" ];
+        path = [
+          "/bin"
+          "/usr/bin"
+          "/usr/local/bin"
+        ];
         serviceConfig.RunAtLoad = true;
         serviceConfig.UserName = "root";
         script = ''
@@ -91,45 +102,45 @@ mkFeature {
       };
     };
 
-  home = { config, pkgs, ... }: mkMerge [
-    {
-      programs.home-manager.enable = true;
+  home =
+    { config, pkgs, ... }:
+    mkMerge [
+      {
+        programs.home-manager.enable = true;
 
-      home.sessionVariables = lib.optionalAttrs (config.globals.apps.editor != null) {
-        EDITOR = config.globals.apps.editor;
-      };
-    }
-    (mkIf (config.globals.platform == "darwin") {
-      targets.darwin = {
-        copyApps.enable = true;
-        linkApps.enable = false;
-      };
-
-      ## Push the user's PATH + sessionVariables into launchd so Dock-
-      ## launched GUI apps see the same env as a login shell.
-      launchd.agents.session-environment = {
-        enable = true;
-        config = {
-          Label = "home-manager.session-environment";
-          RunAtLoad = true;
-          ProgramArguments =
-            let
-              script = pkgs.writeShellScript "session-environment" ''
-                export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-                [ -r /etc/profile ]    && . /etc/profile
-                [ -r "$HOME/.profile" ] && . "$HOME/.profile"
-                launchctl setenv PATH "$PATH"
-
-                ${lib.concatStringsSep "\n" (
-                  lib.mapAttrsToList
-                    (n: v: "launchctl setenv ${n} \"${v}\"")
-                    config.home.sessionVariables
-                )}
-              '';
-            in
-            [ "${script}" ];
+        home.sessionVariables = lib.optionalAttrs (config.globals.apps.editor != null) {
+          EDITOR = config.globals.apps.editor;
         };
-      };
-    })
-  ];
+      }
+      (mkIf (config.globals.platform == "darwin") {
+        targets.darwin = {
+          copyApps.enable = true;
+          linkApps.enable = false;
+        };
+
+        ## Push the user's PATH + sessionVariables into launchd so Dock-
+        ## launched GUI apps see the same env as a login shell.
+        launchd.agents.session-environment = {
+          enable = true;
+          config = {
+            Label = "home-manager.session-environment";
+            RunAtLoad = true;
+            ProgramArguments =
+              let
+                script = pkgs.writeShellScript "session-environment" ''
+                  export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+                  [ -r /etc/profile ]    && . /etc/profile
+                  [ -r "$HOME/.profile" ] && . "$HOME/.profile"
+                  launchctl setenv PATH "$PATH"
+
+                  ${lib.concatStringsSep "\n" (
+                    lib.mapAttrsToList (n: v: "launchctl setenv ${n} \"${v}\"") config.home.sessionVariables
+                  )}
+                '';
+              in
+              [ "${script}" ];
+          };
+        };
+      })
+    ];
 }
