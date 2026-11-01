@@ -4,15 +4,13 @@ mkFeature {
   name = "ghostty";
 
   doc = {
-    summary = "The Ghostty terminal.";
+    summary = "The Ghostty terminal";
     description = ''
-      Installs Ghostty and registers it as `globals.apps.terminal.
+      Installs and configures Ghostty. Sets `globals.apps.terminal` to
+      the bin path of Ghostty so other features can reference it.
 
-      - **Look:** Will adapt its appearance based on the configured theme and fonts.
-      - **SSH:** shell integration copies Ghostty's terminfo and environment to
-        hosts you connect to.
-      - **Settings:** `settings` accepts any Ghostty setting and overrides the
-        defaults; `keybindings` adds key bindings.
+      If the `theme` and `fonts` features are enabled, Ghostty's visuals
+      will be adapted accordingly.
 
       ```nix
       features.ghostty = {
@@ -66,7 +64,8 @@ mkFeature {
     let
       font = config.features.font;
       mono = font.fonts.monospace;
-      hex = config.features.theme.scheme.withHashtag;
+      theme = config.features.theme;
+      hex = theme.scheme.withHashtag;
     in
     {
       programs.ghostty = {
@@ -74,12 +73,13 @@ mkFeature {
         package = config.features.ghostty.package;
 
         settings = {
-          theme = "tessera";
-
           window-padding-x = 8;
           window-padding-y = 8;
 
           shell-integration-features = "ssh-env,ssh-terminfo";
+        }
+        // lib.optionalAttrs theme.enable {
+          theme = "tessera";
         }
         // lib.optionalAttrs font.enable {
           font-family = mono.name;
@@ -103,30 +103,32 @@ mkFeature {
         }
         // config.features.ghostty.settings;
 
-        themes.tessera = with hex; {
-          background = base00;
-          cursor-color = base05;
-          foreground = base05;
-          palette = [
-            "0=${base05}"
-            "1=${base08}"
-            "2=${base0B}"
-            "3=${base0A}"
-            "4=${base0D}"
-            "5=${base0E}"
-            "6=${base0C}"
-            "7=${base05}"
-            "8=${base03}"
-            "9=${base08}"
-            "10=${base0B}"
-            "11=${base0A}"
-            "12=${base0D}"
-            "13=${base0E}"
-            "14=${base0C}"
-            "15=${base06}"
-          ];
-          selection-background = base02;
-          selection-foreground = base05;
+        themes = lib.optionalAttrs theme.enable {
+          tessera = with hex; {
+            background = base00;
+            cursor-color = base05;
+            foreground = base05;
+            palette = [
+              "0=${base05}"
+              "1=${base08}"
+              "2=${base0B}"
+              "3=${base0A}"
+              "4=${base0D}"
+              "5=${base0E}"
+              "6=${base0C}"
+              "7=${base05}"
+              "8=${base03}"
+              "9=${base08}"
+              "10=${base0B}"
+              "11=${base0A}"
+              "12=${base0D}"
+              "13=${base0E}"
+              "14=${base0C}"
+              "15=${base06}"
+            ];
+            selection-background = base02;
+            selection-foreground = base05;
+          };
         };
       };
     };
