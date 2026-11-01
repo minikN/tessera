@@ -13,9 +13,9 @@ mkFeature {
     description = ''
       Runs Sway and registers it as `globals.apps.wm` and `globals.wayland`. It
       uses the keyboard layout (keyboard feature), the cursor (gtk feature) and
-      the colours and wallpaper (theme feature), and starts the commands in
-      `globals.autoloads` with the session. swayr is installed for switching
-      windows.
+      the colours and wallpaper (theme feature) while those features are
+      enabled, and starts the commands in `globals.autoloads` with the session.
+      swayr is installed for switching windows.
 
       Keys are home-manager's Sway defaults with `modifier` (`Mod4`, the super
       key) and the direction keys `h`, `j`, `k` and `l`, plus:
@@ -152,9 +152,9 @@ mkFeature {
     let
       cfg = config.features.sway;
       apps = config.globals.apps;
-      hex = config.features.theme.scheme.withHashtag;
-      kbd = config.features.keyboard.layout;
-      cursor = config.features.gtk.cursorTheme;
+      inherit (config.features) theme keyboard gtk;
+      hex = theme.scheme.withHashtag;
+      kbd = keyboard.layout;
     in
     {
       programs.swayr = {
@@ -197,6 +197,13 @@ mkFeature {
           defaultWorkspace = "workspace number 1";
 
           input = {
+            "type:touchpad" = {
+              dwt = "enabled";
+              tap = "enabled";
+              middle_emulation = "enabled";
+            };
+          }
+          // lib.optionalAttrs keyboard.enable {
             "type:keyboard" = {
               xkb_layout = kbd.name;
               xkb_options = lib.concatStringsSep "," kbd.options;
@@ -204,20 +211,16 @@ mkFeature {
             // lib.optionalAttrs (kbd.variant != "") {
               xkb_variant = kbd.variant;
             };
-            "type:touchpad" = {
-              dwt = "enabled";
-              tap = "enabled";
-              middle_emulation = "enabled";
-            };
           };
 
-          output."*".bg =
-            if config.features.theme.wallpaper == null then
-              "${hex.base00} solid_color"
-            else
-              "${toString config.features.theme.wallpaper} fill";
+          output = lib.optionalAttrs theme.enable {
+            "*".bg =
+              if theme.wallpaper == null then "${hex.base00} solid_color" else "${toString theme.wallpaper} fill";
+          };
 
-          seat."*".xcursor_theme = "${cursor.name} ${toString config.features.gtk.cursorSize}";
+          seat = lib.optionalAttrs gtk.enable {
+            "*".xcursor_theme = "${gtk.cursorTheme.name} ${toString gtk.cursorSize}";
+          };
 
           floating = {
             titlebar = false;
@@ -225,7 +228,7 @@ mkFeature {
           };
 
           ## base0D for focused; ordenada brightens/darkens via nix-rice.
-          colors =
+          colors = lib.optionalAttrs theme.enable (
             let
               bg = hex.base00;
               focused = hex.base0D;
@@ -260,7 +263,8 @@ mkFeature {
                 border = unfocused;
                 childBorder = unfocused;
               };
-            };
+            }
+          );
 
           window = {
             titlebar = false;
