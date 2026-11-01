@@ -120,7 +120,7 @@ mkFeature {
     description = ''
       Installs and configures rofi.
 
-      If the `theme` and `fonts` features are enabled, rofis visuals will be adapted
+      If the `theme` and `font` features are enabled, rofi's visuals will be adapted
       accordingly.
 
       - `enableLauncher`: Sets rofi as the global app launcher and sets
@@ -128,7 +128,7 @@ mkFeature {
         reference it
       - `enablePasswordManager`: Sets rofi as the password manager. Requires the
         `password-store` feature to be enabled. It will install either `tessen`
-        on wayland or a small bash script on X11 to interact with the password store.
+        on wayland or a small shell script on X11 to interact with the password store.
         Sets `globals.apps.passwordManager` to the bin path of the script.
       - `enablePinentry`: Sets rofi as the pinentry application. Requires the `gnupg`
         feature to be enabled.
@@ -201,15 +201,13 @@ mkFeature {
         ${lib.optionalString config.features.gnupg.enable ''export GNUPGHOME="${config.features.gnupg.storeDir}"''}
       '';
 
-      ## Wayland
-      tessen = pkgs.writeShellScriptBin "tessen" ''
+      waylandPass = pkgs.writeShellScriptBin "tessen" ''
         ${env}
         export PATH="${lib.makeBinPath [ cfg.package ]}:$PATH"
         exec ${pkgs.tessen.override { inherit pass; }}/bin/tessen --pass pass --dmenu rofi "$@"
       '';
 
-      ## X11
-      rofiPass = pkgs.writeShellApplication {
+      x11Pass = pkgs.writeShellApplication {
         name = "rofi-pass";
         runtimeInputs = with pkgs; [
           cfg.package
@@ -247,7 +245,9 @@ mkFeature {
       apps.passwordManager =
         lib.mkIf (cfg.enablePasswordManager && config.features.password-store.enable)
           (
-            lib.mkForce (if config.globals.wayland then "${tessen}/bin/tessen" else "${rofiPass}/bin/rofi-pass")
+           lib.mkForce (
+              if config.globals.wayland then "${waylandPass}/bin/tessen" else "${x11Pass}/bin/rofi-pass"
+            )
           );
     };
 
