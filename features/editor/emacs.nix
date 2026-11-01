@@ -137,9 +137,10 @@ mkFeature {
             :group 'external
             :prefix "tessera-")
 
-          (setq user-full-name "${user.fullName}"
-                user-mail-address "${user.email}")
-
+          ${optionalString user.enable ''
+            (setq user-full-name "${user.fullName}"
+                  user-mail-address "${user.email}")
+          ''}
           (setopt custom-file "${stateDir}/custom.el")
           (load custom-file t)
           (setopt backup-directory-alist '(("." . "${stateDir}/backup"))
