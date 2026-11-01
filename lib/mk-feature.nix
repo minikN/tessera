@@ -10,9 +10,6 @@
   enableByDefault ? false,
   ## [ "home" "nixos" "darwin" ] - optional. Only set where it can't be derived automatically
   platforms ? null,
-  ## Optional. Only set if there's a dependency that can't be derived by the name.
-  ## E.g. `emacs.completion` has a derived dependency on `emacs`
-  requires ? [ ],
   ## { summary; description; nixos; darwin; }
   doc ? null,
   ...
@@ -33,8 +30,7 @@ let
   enablePath = optionPath ++ [ "enable" ];
   niceName = concatStringsSep "." fname;
 
-  requiredNames =
-    lib.optional (builtins.length fname > 1) (lib.init fname) ++ map lib.toList requires;
+  requiredNames = lib.optional (builtins.length fname > 1) (lib.init fname);
 
   ## Whether the feature works on `platform`
   supports =
