@@ -152,7 +152,6 @@ mkFeature {
   name = "myFeature";        # string or list of strings (nested: ["foo" "bar"])
   enableByDefault = false;   # if true, the feature is on unless a host disables it
   platforms = null;          # optional subset of [ "home" "nixos" "darwin" ] (see below)
-  requires = [ ];            # optional: other features this one needs
 
   doc = {
     summary = "One line.";
@@ -191,8 +190,7 @@ feature on a host it doesn't support is an error; features that are only
 on by default are left alone.
 
 **Dependencies.** A nested feature (`emacs.keymaps`) requires its parent
-(`emacs`); `requires` adds others. Enabling a feature without its
-requirements is an error.
+(`emacs`); Enabling a feature without its requirements is an error.
 
 ### Cross-platform feature
 
