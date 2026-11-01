@@ -120,11 +120,16 @@ mkFeature {
     description = ''
       Installs and configures rofi.
 
+      If the `theme` and `fonts` features are enabled, rofis visuals will be adapted
+      accordingly.
+
       - `enableLauncher`: Sets rofi as the global app launcher and sets
         `globals.apps.launcher` to the rofi bin path so other features can
         reference it
       - `enablePasswordManager`: Sets rofi as the password manager. Requires the
-        `password-store` feature to be enabled. Sets `globals.apps.passwordManager`
+        `password-store` feature to be enabled. It will install either `tessen`
+        on wayland or a small bash script on X11 to interact with the password store.
+        Sets `globals.apps.passwordManager` to the bin path of the script.
       - `enablePinentry`: Sets rofi as the pinentry application. Requires the `gnupg`
         feature to be enabled.
 
