@@ -118,19 +118,25 @@ mkFeature {
   doc = {
     summary = "rofi as application launcher, password menu and passphrase prompt.";
     description = ''
-      Installs rofi, styled with the configured theme and fonts, and uses it for:
+      Installs and configures rofi.
 
-      - **Launcher** (`globals.apps.launcher`): `rofi -show drun`. Off with
-        `enableLauncher = false`.
-      - **Password manager** (`globals.apps.passwordManager`): on Wayland
-        (`globals.wayland`) tessen, which can type or copy entries; on X11 a
-        small menu that copies an entry's password, username, URL or one-time
-        code. Off with `enablePasswordManager = false`.
-      - **Passphrase prompt:** GnuPG (gnupg feature) asks for passphrases
-        through rofi (pinentry-rofi). Off with `enablePinentry = false`.
+      - `enableLauncher`: Sets rofi as the global app launcher and sets
+        `globals.apps.launcher` to the rofi bin path so other features can
+        reference it
+      - `enablePasswordManager`: Sets rofi as the password manager. Requires the
+        `password-store` feature to be enabled. Sets `globals.apps.passwordManager`
+      - `enablePinentry`: Sets rofi as the pinentry application. Requires the `gnupg`
+        feature to be enabled.
 
-      `keybindings` sets rofi's `kb-*` settings on top of the defaults (e.g.
-      `Alt+n` and `Alt+p` for the next and previous entry).
+      ```nix
+      features = {
+        rofi = {
+          enable = true;
+          enablePinentry = false;
+        };
+        password-store.enable = true;
+      };
+      ```
     '';
   };
 
@@ -187,7 +193,7 @@ mkFeature {
       pass = config.features.password-store.package;
       env = ''
         export PASSWORD_STORE_DIR="${config.features.password-store.storeDir}"
-        export GNUPGHOME="${config.features.gnupg.storeDir}"
+        ${lib.optionalString config.features.gnupg.enable ''export GNUPGHOME="${config.features.gnupg.storeDir}"''}
       '';
 
       ## Wayland
@@ -233,9 +239,11 @@ mkFeature {
     {
       apps.launcher = lib.mkIf cfg.enableLauncher (lib.mkForce "${cfg.package}/bin/rofi -show drun");
 
-      apps.passwordManager = lib.mkIf cfg.enablePasswordManager (
-        lib.mkForce (if config.globals.wayland then "${tessen}/bin/tessen" else "${rofiPass}/bin/rofi-pass")
-      );
+      apps.passwordManager =
+        lib.mkIf (cfg.enablePasswordManager && config.features.password-store.enable)
+          (
+            lib.mkForce (if config.globals.wayland then "${tessen}/bin/tessen" else "${rofiPass}/bin/rofi-pass")
+          );
     };
 
   home =
@@ -248,12 +256,12 @@ mkFeature {
         programs.rofi = {
           enable = true;
           package = cfg.package;
-          extraConfig = mkSettings config // cfg.keybindings;
-          theme = mkTheme config;
+          settings = mkSettings config // cfg.keybindings;
+          theme = lib.mkIf config.features.theme.enable (mkTheme config);
         };
       }
 
-      (lib.mkIf cfg.enablePinentry {
+      (lib.mkIf (cfg.enablePinentry && config.features.gnupg.enable) {
         services.gpg-agent.pinentry.package = lib.mkForce pkgs.pinentry-rofi;
       })
     ];
