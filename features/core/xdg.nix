@@ -43,7 +43,8 @@ mkFeature {
   options =
     { config, ... }:
     let
-      home = config.features.user.homeDirectory;
+      user = config.features.user;
+      home = if user.enable then user.homeDirectory else config.home.homeDirectory;
       cap = config.features.xdg.capitalizeUserDirs;
       dir = name: "${home}/${if cap then capitalize name else name}";
     in
