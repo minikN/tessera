@@ -197,7 +197,7 @@ mkFeature {
       cfg = config.features.rofi;
       pass = config.features.password-store.package;
       env = ''
-        export PASSWORD_STORE_DIR="${config.features.password-store.storeDir}"
+        ${lib.optionalString config.features.password-store.enable ''export PASSWORD_STORE_DIR="${config.features.password-store.storeDir}"''}
         ${lib.optionalString config.features.gnupg.enable ''export GNUPGHOME="${config.features.gnupg.storeDir}"''}
       '';
 
@@ -245,7 +245,7 @@ mkFeature {
       apps.passwordManager =
         lib.mkIf (cfg.enablePasswordManager && config.features.password-store.enable)
           (
-           lib.mkForce (
+            lib.mkForce (
               if config.globals.wayland then "${waylandPass}/bin/tessen" else "${x11Pass}/bin/rofi-pass"
             )
           );
