@@ -6,13 +6,12 @@ mkFeature {
   doc = {
     summary = "GnuPG with gpg-agent.";
     description = ''
-      Sets up GnuPG with its keyring in `storeDir` and runs gpg-agent as the
-      SSH agent. Passphrases are rememberd for `defaultTtl` seconds.
+      Sets up GnuPG with its keyring in `storeDir` and runs `gpg-agent` as the
+      SSH agent. Passphrases are remembered for `defaultTtl` seconds.
       `pinentryPackage` is used as the pin entry.
 
-      - **SSH:** gpg-agent also works as the SSH agent. The GPG keys listed in
-        `sshKeys` (by keygrip, see `gpg --list-keys --with-keygrip`) are offered
-        to SSH.
+      `gpg-agent` also works as the SSH agent. The GPG keys listed in
+      `sshKeys` (see `gpg --list-keys --with-keygrip`) are offered to SSH.
 
       ```nix
       features.gnupg = {
@@ -22,9 +21,8 @@ mkFeature {
       ```
     '';
     darwin = ''
-      - **Keychain:** passphrases are asked for with pinentry-mac;
-        `keychainInteraction` decides whether it offers to save them in the
-        macOS keychain.
+      passphrases are asked for with pinentry-mac. `keychainInteraction` decides
+      whether it offers to save them in the macOS keychain.
     '';
   };
 
@@ -55,9 +53,15 @@ mkFeature {
 
       storeDir = mkOption {
         type = types.str;
-        defaultText = lib.literalExpression ''"''${config.features.user.homeDirectory}/.gnupg"'';
-        default = "${config.features.user.homeDirectory}/.gnupg";
-        description = "GNUPGHOME / programs.gpg.homedir. Migrate keyring before changing.";
+        defaultText = lib.literalMD ''
+          `''${homeDirectory}/.gnupg` or `~/.gnupg` depending on whether the user feature is enabled
+        '';
+        default =
+          let
+            user = config.features.user;
+          in
+          "${if user.enable then user.homeDirectory else config.home.homeDirectory}/.gnupg";
+        description = "GNUPGHOME / programs.gpg.homedir";
       };
 
       keychainInteraction = mkOption {
