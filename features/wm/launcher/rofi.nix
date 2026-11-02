@@ -8,7 +8,7 @@ let
       mkLiteral = config.lib.formats.rasi.mkLiteral;
     in
     {
-      "*" = with config.features.theme.scheme.withHashtag; {
+      "*" = with config.features.theme.colors.withHashtag; {
         border = 0;
         margin = 0;
         padding = 0;

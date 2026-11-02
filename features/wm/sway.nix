@@ -153,7 +153,7 @@ mkFeature {
       cfg = config.features.sway;
       apps = config.globals.apps;
       inherit (config.features) theme keyboard gtk;
-      hex = theme.scheme.withHashtag;
+      hex = theme.colors.withHashtag;
       kbd = keyboard.layout;
     in
     {

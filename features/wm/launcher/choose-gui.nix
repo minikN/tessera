@@ -62,11 +62,10 @@ mkFeature {
           font = config.features.font;
           mono = font.fonts.monospace;
           theme = config.features.theme;
-          scheme = theme.scheme;
         in
         "${cfg.package}/bin/choose"
         + lib.optionalString font.enable " -f ${lib.escapeShellArg mono.name} -s ${toString (mono.size * 3 / 2)}"
-        + lib.optionalString theme.enable " -c ${scheme.base0D} -b ${scheme.base02}";
+        + lib.optionalString theme.enable " -c ${theme.colors.base0D} -b ${theme.colors.base02}";
 
       launcher = pkgs.writeShellScript "choose-launcher" ''
         dirs=(/Applications /System/Applications "$HOME/Applications" /System/Library/CoreServices/Finder.app)
