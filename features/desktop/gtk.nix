@@ -8,7 +8,7 @@ mkFeature {
   ];
 
   doc = {
-    summary = "GTK theme, icons and cursor that follow the light/dark polarity.";
+    summary = "GTK theme, icons and cursor that follow the light/dark polarity";
     description = ''
       Styles GTK 3 and GTK 4 applications with the set theme. If a light and dark
       variant are given, it choose the correct one based on the `polarity` in the
@@ -25,11 +25,11 @@ mkFeature {
         options = {
           name = mkOption {
             type = types.str;
-            description = "Theme name.";
+            description = "Theme name";
           };
           package = mkOption {
             type = types.package;
-            description = "Theme package.";
+            description = "Theme package";
           };
         };
       };
@@ -60,7 +60,7 @@ mkFeature {
 
       iconTheme = mkOption {
         type = themeModule;
-        description = "Icon theme.";
+        description = "Icon theme";
         defaultText = lib.literalExpression ''{ name = "Adwaita"; package = pkgs.adwaita-icon-theme; }'';
         default = {
           name = "Adwaita";
@@ -70,7 +70,7 @@ mkFeature {
 
       cursorTheme = mkOption {
         type = themeModule;
-        description = "Cursor theme.";
+        description = "Cursor theme";
         defaultText = lib.literalMD ''
           Either `Bibata-Modern-Classic` (dark) or `Bibata-Modern-Ice` (light) depending on
           the `polarity` set in the `theme` feature.
@@ -84,13 +84,13 @@ mkFeature {
       cursorSize = mkOption {
         type = types.int;
         default = 24;
-        description = "Cursor size (px).";
+        description = "Cursor size (px)";
       };
 
       extraCss = mkOption {
         type = types.lines;
         default = "";
-        description = "Extra CSS for gtk3 + gtk4.";
+        description = "Extra CSS for gtk3 + gtk4";
       };
 
       extraConfig = mkOption {
@@ -102,7 +102,7 @@ mkFeature {
             str
           ]);
         default = { };
-        description = "Extra settings.ini entries for gtk3 + gtk4.";
+        description = "Extra settings.ini entries for gtk3 + gtk4";
       };
     };
 

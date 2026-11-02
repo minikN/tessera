@@ -20,14 +20,14 @@ mkFeature {
       whatever other features registered as globals.
 
       - The shell in `globals.apps.shell` (set by e.g. the zsh feature) becomes the
-        user's login shell and is added to the system's allowed shells.
-      - `globals.apps.editor` (set by e.g. the Emacs feature) is exported as `$EDITOR`.
+        user's login shell and is added to the system's allowed shells
+      - `globals.apps.editor` (set by e.g. the Emacs feature) is exported as `$EDITOR`
 
       **This is a fundamental feature. Other features rely on it being activated**
     '';
     nixos = ''
       - `autostartWmOnTTY`: starts `globals.apps.wm` (if set) when logged in on the
-        set tty.
+        set tty
 
         ```nix
         features = {
@@ -38,9 +38,9 @@ mkFeature {
     '';
     darwin = ''
       - Applications installed via home-manager are copied to
-        `~/Applications/Home Manager Apps`, so Spotlight and the Dock find them.
+        `~/Applications/Home Manager Apps`, so Spotlight and the Dock find them
       - `home.sessionVariables` is forwarded to `launchd` so that application started
-        via Spotlight or Dock have the same environment as the terminal.
+        via Spotlight or Dock have the same environment as the terminal
     '';
   };
 
@@ -49,7 +49,7 @@ mkFeature {
       type = types.nullOr types.str;
       default = null;
       example = "/dev/tty1";
-      description = "TTY on which logging in starts the window manager in `globals.apps.wm` (NixOS only); `null` disables autostart.";
+      description = "TTY on which logging in starts the window manager in `globals.apps.wm` (NixOS only); `null` disables autostart";
     };
   };
 

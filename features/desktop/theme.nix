@@ -48,7 +48,7 @@ mkFeature {
   name = "theme";
 
   doc = {
-    summary = "A light or dark colour scheme shared by all features.";
+    summary = "A light or dark colour scheme shared by all features";
     description = ''
       Holds the base16 colour scheme that other features take their colours
       from, e.g. ghostty, sway, rofi, choose-gui and the GTK theme. `polarity`
@@ -58,7 +58,7 @@ mkFeature {
 
       - **Shared with other features:** they use these options even when this
         feature is disabled, so setting `polarity` or `scheme` is enough;
-        enabling the feature is only needed for `enableToggle`.
+        enabling the feature is only needed for `enableToggle`
 
       ```nix
       features.theme.polarity = "dark";
@@ -67,7 +67,7 @@ mkFeature {
     nixos = ''
       - `enableToggle`: builds the other polarity as a NixOS specialisation and
         installs `toggle-theme` (also as a desktop entry), which switches
-        between light and dark at runtime without asking for a password.
+        between light and dark at runtime without asking for a password
     '';
   };
 
@@ -83,7 +83,7 @@ mkFeature {
           "dark"
         ];
         default = "light";
-        description = "Theme polarity.";
+        description = "Theme polarity";
       };
 
       scheme = mkOption {
@@ -91,20 +91,20 @@ mkFeature {
         apply = mkSchemeAttrs;
         defaultText = lib.literalMD "The built-in light or dark scheme, following `polarity`";
         default = rawSchemes.${config.features.theme.polarity};
-        description = "Base16 scheme (plain hex; `scheme.withHashtag.*` exposes the `#`-prefixed form).";
+        description = "Base16 scheme (plain hex; `scheme.withHashtag.*` exposes the `#`-prefixed form)";
       };
 
       defaultSchemes = mkOption {
         type = types.attrs;
         readOnly = true;
         default = lib.mapAttrs (_: mkSchemeAttrs) rawSchemes;
-        description = "Built-in light/dark schemes for consumers that need both palettes.";
+        description = "Built-in light/dark schemes for consumers that need both palettes";
       };
 
       wallpaper = mkOption {
         type = types.nullOr types.path;
         default = null;
-        description = "Wallpaper path; null falls back to a solid colour from `scheme`.";
+        description = "Wallpaper path; null falls back to a solid colour from `scheme`";
       };
 
       enableToggle = mkEnableOption "runtime light/dark switching via NixOS specialisation";

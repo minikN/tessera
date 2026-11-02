@@ -12,25 +12,25 @@ mkFeature {
   name = "emacs";
 
   doc = {
-    summary = "Sets up Emacs as the primary computing environment.";
+    summary = "Sets up Emacs as the primary computing environment";
     description = ''
       Installs Emacs and runs it as a daemon. `globals.apps.editor` becomes
       `emacsclient -c`, exported by the `home` feature as `$EDITOR`. The `emacs.*`
       features build on this one.
 
       - **Package:** the pure-GTK build on Wayland (`globals.wayland`), the
-        regular build otherwise; see `package`.
-      - **Clean frames:** no menu bar, tool bar, scroll bars or splash screen.
+        regular build otherwise; see `package`
+      - **Clean frames:** no menu bar, tool bar, scroll bars or splash screen
       - **State:** history, recent files, places, backups, auto-saves and
-        `custom.el` live in `~/.local/state/emacs`.
+        `custom.el` live in `~/.local/state/emacs`
       - **Fonts and shell:** uses the font feature's monospace and emoji fonts
         when it is enabled, and the shell in `globals.apps.shell` for
-        `M-x shell`.
+        `M-x shell`
     '';
     darwin = ''
       - **Environment:** the daemon starts from launchd with a bare
         environment, so on startup Emacs takes `PATH`, the SSH agent socket and
-        home-manager's session variables from the login shell.
+        home-manager's session variables from the login shell
     '';
   };
 
@@ -39,13 +39,13 @@ mkFeature {
       type = types.package;
       default = if config.globals.wayland then pkgs.emacs-pgtk else pkgs.emacs;
       defaultText = lib.literalExpression "pkgs.emacs-pgtk on Wayland, pkgs.emacs otherwise";
-      description = "Emacs package.";
+      description = "Emacs package";
     };
 
     earlyInit = mkOption {
       type = types.lines;
       default = "";
-      description = "early-init.el contents; features contribute via mkElispConfig's `earlyInit`.";
+      description = "early-init.el contents; features contribute via mkElispConfig's `earlyInit`";
     };
   };
 

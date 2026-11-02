@@ -116,7 +116,7 @@ mkFeature {
   name = "rofi";
 
   doc = {
-    summary = "rofi as application launcher, password menu and passphrase prompt.";
+    summary = "rofi as application launcher, password menu and passphrase prompt";
     description = ''
       Installs and configures rofi.
 
@@ -129,9 +129,9 @@ mkFeature {
       - `enablePasswordManager`: Sets rofi as the password manager. Requires the
         `password-store` feature to be enabled. It will install either `tessen`
         on wayland or a small shell script on X11 to interact with the password store.
-        Sets `globals.apps.passwordManager` to the bin path of the script.
+        Sets `globals.apps.passwordManager` to the bin path of the script
       - `enablePinentry`: Sets rofi as the pinentry application. Requires the `gnupg`
-        feature to be enabled.
+        feature to be enabled
 
       ```nix
       features = {
@@ -156,30 +156,30 @@ mkFeature {
       showActions = mkOption {
         type = types.bool;
         default = true;
-        description = "Whether to show drun actions.";
+        description = "Whether to show drun actions";
       };
       showIcons = mkOption {
         type = types.bool;
         default = true;
-        description = "Whether to show icons.";
+        description = "Whether to show icons";
       };
       enableLauncher = mkOption {
         type = types.bool;
         defaultText = lib.literalExpression "config.features.rofi.enable";
         default = enabled;
-        description = "Use this feature as the global launcher.";
+        description = "Use this feature as the global launcher";
       };
       enablePinentry = mkOption {
         type = types.bool;
         defaultText = lib.literalExpression "config.features.rofi.enable";
         default = enabled;
-        description = "Use this feature as the global pinentry.";
+        description = "Use this feature as the global pinentry";
       };
       enablePasswordManager = mkOption {
         type = types.bool;
         defaultText = lib.literalExpression "config.features.rofi.enable";
         default = enabled;
-        description = "Use this feature as the global password manager.";
+        description = "Use this feature as the global password manager";
       };
       keybindings = mkOption {
         type = types.attrsOf types.str;
@@ -187,7 +187,7 @@ mkFeature {
         example = {
           kb-row-select = "Tab";
         };
-        description = "Keybindings (rofi's `kb-*` settings) merged over the defaults.";
+        description = "Keybindings (rofi's `kb-*` settings) merged over the defaults";
       };
     };
 

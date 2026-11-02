@@ -4,7 +4,7 @@ mkFeature {
   name = "gnupg";
 
   doc = {
-    summary = "GnuPG with gpg-agent.";
+    summary = "GnuPG with gpg-agent";
     description = ''
       Sets up GnuPG with its keyring in `storeDir` and runs `gpg-agent` as the
       SSH agent. Passphrases are remembered for `defaultTtl` seconds.
@@ -35,20 +35,20 @@ mkFeature {
       sshKeys = mkOption {
         type = types.listOf types.str;
         default = [ ];
-        description = "GPG keygrips exposed via gpg-agent's SSH socket.";
+        description = "GPG keygrips exposed via gpg-agent's SSH socket";
       };
 
       defaultTtl = mkOption {
         type = types.int;
         default = 86400;
-        description = "Passphrase cache TTL (seconds).";
+        description = "Passphrase cache TTL (seconds)";
       };
 
       pinentryPackage = mkOption {
         type = types.nullOr types.package;
         defaultText = lib.literalMD "`pkgs.pinentry_mac` on macOS, `pkgs.pinentry-qt` on Linux";
         default = if config.globals.platform == "darwin" then pkgs.pinentry_mac else pkgs.pinentry-qt;
-        description = "Pinentry binary used for prompts.";
+        description = "Pinentry binary used for prompts";
       };
 
       storeDir = mkOption {
@@ -67,7 +67,7 @@ mkFeature {
       keychainInteraction = mkOption {
         type = types.bool;
         default = true;
-        description = "Whether to offer to save the password in the system keychain (darwin only).";
+        description = "Whether to offer to save the password in the system keychain (darwin only)";
       };
     };
 

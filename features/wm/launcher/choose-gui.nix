@@ -4,7 +4,7 @@ mkFeature {
   name = "choose-gui";
 
   doc = {
-    summary = "choose, a fuzzy finder for macOS, as launcher and password menu.";
+    summary = "choose, a fuzzy finder for macOS, as launcher and password menu";
     description = ''
       Installs and configures choose (choose-gui).
 
@@ -16,7 +16,7 @@ mkFeature {
         reference it
       - `enablePasswordManager`: Sets choose as the password manager. Requires the
         `password-store` feature to be enabled. Sets `globals.apps.passwordManager`
-        to the bin path of choose so other features can reference it.
+        to the bin path of choose so other features can reference it
 
       ```nix
       features = {
@@ -42,13 +42,13 @@ mkFeature {
         type = types.bool;
         defaultText = lib.literalExpression "config.features.choose-gui.enable";
         default = enabled;
-        description = "Use this feature as the global launcher.";
+        description = "Use this feature as the global launcher";
       };
       enablePasswordManager = mkOption {
         type = types.bool;
         defaultText = lib.literalExpression "config.features.choose-gui.enable";
         default = enabled;
-        description = "Use this feature as the global password manager.";
+        description = "Use this feature as the global password manager";
       };
     };
 

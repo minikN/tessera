@@ -123,7 +123,7 @@ let
             type = types.bool;
             default = enableByDefault;
             example = !enableByDefault;
-            description = "Whether to enable the ${niceName} feature.";
+            description = "Whether to enable the ${niceName} feature";
           };
         }
         // userOptions

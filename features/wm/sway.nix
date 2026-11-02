@@ -9,7 +9,7 @@ mkFeature {
   name = "sway";
 
   doc = {
-    summary = "Sway, a tiling Wayland compositor.";
+    summary = "Sway, a tiling Wayland compositor";
     description = ''
       Runs Sway and registers it as `globals.apps.wm` and `globals.wayland`. It
       uses the keyboard layout (keyboard feature), the cursor (gtk feature) and
@@ -28,7 +28,7 @@ mkFeature {
       | `Mod4+b` | show or hide the bar (with `useGlobalBar`) |
 
       - **Bar:** with `useGlobalBar`, Sway starts the bar in `globals.apps.bar`
-        itself (`extraGlobalBarSettings` adds to its settings).
+        itself (`extraGlobalBarSettings` adds to its settings)
 
       `keybindings` adds or overrides keys and can use the same parameters;
       `extraConfig` is merged into the Sway configuration.
@@ -47,7 +47,7 @@ mkFeature {
     '';
     nixos = ''
       - **System:** enables graphics and polkit, and runs Chromium and Electron
-        apps natively on Wayland (`NIXOS_OZONE_WL`).
+        apps natively on Wayland (`NIXOS_OZONE_WL`)
     '';
   };
 
@@ -68,28 +68,28 @@ mkFeature {
       modifier = mkOption {
         type = types.str;
         default = "Mod4";
-        description = "Modifier key (Mod4 = Super).";
+        description = "Modifier key (Mod4 = Super)";
       };
 
       left = mkOption {
         type = types.str;
         default = "h";
-        description = "Key for `left`.";
+        description = "Key for `left`";
       };
       right = mkOption {
         type = types.str;
         default = "l";
-        description = "Key for `right`.";
+        description = "Key for `right`";
       };
       up = mkOption {
         type = types.str;
         default = "k";
-        description = "Key for `up`.";
+        description = "Key for `up`";
       };
       down = mkOption {
         type = types.str;
         default = "j";
-        description = "Key for `down`.";
+        description = "Key for `down`";
       };
 
       useGlobalBar = mkEnableOption "sway-spawned global bar";
@@ -97,7 +97,7 @@ mkFeature {
       extraGlobalBarSettings = mkOption {
         type = types.attrs;
         default = { };
-        description = "Extra fields merged into sway's `bar` block.";
+        description = "Extra fields merged into sway's `bar` block";
       };
 
       keybindings = mkOption {
@@ -115,13 +115,13 @@ mkFeature {
               ;
             inherit (config.globals) apps;
           };
-        description = "Keybindings merged over the defaults: an attrset, or a function of `{ modifier, left, right, up, down, apps, ... }`.";
+        description = "Keybindings merged over the defaults: an attrset, or a function of `{ modifier, left, right, up, down, apps, ... }`";
       };
 
       extraConfig = mkOption {
         type = types.attrs;
         default = { };
-        description = "Extra fields recursively merged into the sway config.";
+        description = "Extra fields recursively merged into the sway config";
       };
     };
 

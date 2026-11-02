@@ -4,7 +4,7 @@ mkFeature {
   name = "font";
 
   doc = {
-    summary = "Default fonts for desktop applications and terminals.";
+    summary = "Default fonts for desktop applications and terminals";
     description = ''
       Installs four fonts and makes them the fontconfig defaults: `monospace`
       for terminals and editors, `serif`, `sans` (the serif font unless set)
@@ -14,7 +14,7 @@ mkFeature {
       - **Shared with other features:** terminal, editor and launcher
         features (e.g. ghostty, Emacs, rofi, choose-gui) use these fonts
         while this feature is enabled. Without it, they keep their own
-        default fonts.
+        default fonts
 
       ```nix
       features.font = {
@@ -33,17 +33,17 @@ mkFeature {
         options = {
           name = mkOption {
             type = types.str;
-            description = "Font family name.";
+            description = "Font family name";
           };
           package = mkOption {
             type = types.nullOr types.package;
             default = null;
-            description = "Font package; null to skip install (e.g. OS-shipped).";
+            description = "Font package; null to skip install (e.g. OS-shipped)";
           };
           size = mkOption {
             type = types.int;
             default = 11;
-            description = "Size in points.";
+            description = "Size in points";
           };
         };
       };
@@ -52,7 +52,7 @@ mkFeature {
       fonts = {
         monospace = mkOption {
           type = fontModule;
-          description = "Monospace font.";
+          description = "Monospace font";
           defaultText = lib.literalExpression ''{ name = "Iosevka Nerd Font Mono"; package = pkgs.nerd-fonts.iosevka; size = 15; }'';
           default = {
             name = "Iosevka Nerd Font Mono";
@@ -62,7 +62,7 @@ mkFeature {
         };
         serif = mkOption {
           type = fontModule;
-          description = "Serif font.";
+          description = "Serif font";
           defaultText = lib.literalExpression ''{ name = "IBM Plex Sans"; package = pkgs.ibm-plex; size = 11; }'';
           default = {
             name = "IBM Plex Sans";
@@ -72,13 +72,13 @@ mkFeature {
         };
         sans = mkOption {
           type = fontModule;
-          description = "Sans-serif font.";
+          description = "Sans-serif font";
           defaultText = lib.literalExpression "config.features.font.fonts.serif";
           default = config.features.font.fonts.serif;
         };
         unicode = mkOption {
           type = fontModule;
-          description = "Unicode / emoji font.";
+          description = "Unicode / emoji font";
           ## On darwin use Apple Color Emoji; noto-fonts-color-emoji's
           ## afdko build is broken on aarch64-darwin.
           defaultText = lib.literalMD "Apple Color Emoji (shipped with macOS) on macOS, Noto Color Emoji (`pkgs.noto-fonts-color-emoji`) on Linux; size 11";

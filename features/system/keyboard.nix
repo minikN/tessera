@@ -7,7 +7,7 @@ mkFeature {
   name = "keyboard";
 
   doc = {
-    summary = "Keyboard layout for the console, X11 and Wayland.";
+    summary = "Keyboard layout for the console, X11 and Wayland";
     description = ''
       `layout` sets the XKB layout, variant and options: by default a US layout
       with Caps Lock as an additional Control key (`ctrl:nocaps`). The layout
@@ -23,17 +23,17 @@ mkFeature {
     '';
     nixos = ''
       - **Console and X11:** the text console uses the (first) layout, display
-        managers and X11 sessions use all of it.
+        managers and X11 sessions use all of it
     '';
     darwin = ''
       - **Caps Lock:** macOS keeps its own layout; only `ctrl:nocaps` is
-        applied, remapping Caps Lock to Control.
+        applied, remapping Caps Lock to Control
     '';
   };
 
   options = {
     layout = mkOption {
-      description = "Keyboard layout.";
+      description = "Keyboard layout";
       default = {
         name = "us";
         options = [ "ctrl:nocaps" ];
@@ -43,17 +43,17 @@ mkFeature {
           name = mkOption {
             type = types.str;
             default = "us";
-            description = "XKB layout (comma-separated for multi-layout; tty uses first).";
+            description = "XKB layout (comma-separated for multi-layout; tty uses first)";
           };
           variant = mkOption {
             type = types.str;
             default = "";
-            description = "XKB variant (e.g. dvorak, nodeadkeys).";
+            description = "XKB variant (e.g. dvorak, nodeadkeys)";
           };
           options = mkOption {
             type = types.listOf types.str;
             default = [ ];
-            description = "XKB options (e.g. ctrl:nocaps).";
+            description = "XKB options (e.g. ctrl:nocaps)";
           };
         };
       };
