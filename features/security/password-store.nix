@@ -6,13 +6,8 @@ mkFeature {
   doc = {
     summary = "pass, the standard Unix password manager, with one-time codes.";
     description = ''
-      Installs pass with the pass-otp extension (`pass otp` for one-time
-      codes) and keeps the store in `storeDir`. Entries are encrypted with
-      your GPG key (see the gnupg feature).
-
-      - **Menus:** launcher features build password menus on top of it and
-        register them as `globals.apps.passwordManager`: rofi on Linux,
-        choose-gui on macOS.
+      Installs and configures the `pass` and `pass-otp`. Saves the password store
+      at `storeDir`.
     '';
   };
 
@@ -33,8 +28,14 @@ mkFeature {
 
       storeDir = mkOption {
         type = types.str;
-        defaultText = lib.literalExpression ''"''${config.features.xdg.baseDirs.stateHome}/password-store"'';
-        default = "${config.features.xdg.baseDirs.stateHome}/password-store";
+        defaultText = lib.literalMD ''
+          `''${baseDirs.stateHome}/password-store` or `~/.password-store` depending on whether the xdg feature is enabled
+        '';
+        default =
+          if config.features.xdg.enable then
+            "${config.features.xdg.baseDirs.stateHome}/password-store"
+          else
+            "${config.home.homeDirectory}/.password-store";
         description = "Password store location, exported as PASSWORD_STORE_DIR.";
       };
     };
