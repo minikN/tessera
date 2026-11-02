@@ -23,7 +23,12 @@ every host in `hosts/` from tessera's features plus your own:
 
   outputs = inputs: inputs.tessera.lib.mkFlake {
     inherit inputs;
-    globals = import ./globals.nix;
+    globals = {
+      user = "jane";
+      fullName = "Jane Doe";
+      email = "jane@example.com";
+      stateVersion = "26.05";
+    };
     hosts = ./hosts;
     features = ./features;   # optional: your own features
   };
@@ -32,7 +37,6 @@ every host in `hosts/` from tessera's features plus your own:
 
 ```
 flake.nix
-globals.nix      # static constants (user name, email, ...)
 hosts/           # one file per machine
 features/        # your own features, next to tessera's
 ```

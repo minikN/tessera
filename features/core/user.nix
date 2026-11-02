@@ -11,20 +11,24 @@ mkFeature {
     summary = "The user account the configuration is for";
     description = ''
       Describes the user the configuration is for. It is enabled by default.
-      `username`, `fullName` and `email` are globally set by you (`globals.nix`).
+      `username`, `fullName` and `email` are globally set by you (`globals` in `mkFlake`).
 
       - Sets the users `homeDirectory`
 
       **This is a fundamental feature. Other features rely on it being activated**
 
       ```nix
-      # globals.nix
-      {
-        user = "jane";
-        fullName = "Jane Doe";
-        email = "jane@example.com";
-        stateVersion = "26.05";
-      }
+      # flake.nix
+      outputs = inputs: inputs.tessera.lib.mkFlake {
+        inherit inputs;
+        globals = {
+          user = "jane";
+          fullName = "Jane Doe";
+          email = "jane@example.com";
+          stateVersion = "26.05";
+        };
+        # ...
+      };
       ```
     '';
     nixos = ''

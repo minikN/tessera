@@ -7,7 +7,7 @@ in
   options.globals = {
     user = mkOption {
       type = types.attrs;
-      description = "Static globals from globals.nix";
+      description = "Static globals passed to `mkFlake`";
     };
     platform = mkOption {
       type = types.enum [
