@@ -10,13 +10,9 @@ mkFeature {
   doc = {
     summary = "GTK theme, icons and cursor that follow the light/dark polarity.";
     description = ''
-      Styles GTK 3 and GTK 4 applications: the theme (adw-gtk3, light or dark
-      following `features.theme.polarity`), the icon theme (Adwaita) and the
-      cursor (Bibata, `cursorSize` pixels). It also installs dconf and GNOME
-      Tweaks.
-
-      - **Tweaks:** `extraCss` and `extraConfig` (`settings.ini` entries) apply
-        to both GTK versions.
+      Styles GTK 3 and GTK 4 applications with the set theme. If a light and dark
+      variant are given, it choose the correct one based on the `polarity` in the
+      `theme` feature.
     '';
   };
 
@@ -24,6 +20,7 @@ mkFeature {
     { config, pkgs, ... }:
     let
       inherit (lib) mkOption types;
+      polarity = if config.features.theme.enable then config.features.theme.polarity else "light";
       themeModule = types.submodule {
         options = {
           name = mkOption {
@@ -40,7 +37,7 @@ mkFeature {
     {
       defaultThemes = mkOption {
         type = types.attrsOf themeModule;
-        description = "Built-in light/dark GTK themes (consumed by `theme` default).";
+        description = "Built-in light/dark GTK themes";
         defaultText = lib.literalExpression ''{ light = { name = "adw-gtk3"; package = pkgs.adw-gtk3; }; dark = { name = "adw-gtk3-dark"; package = pkgs.adw-gtk3; }; }'';
         default = {
           light = {
@@ -56,9 +53,9 @@ mkFeature {
 
       theme = mkOption {
         type = themeModule;
-        description = "Active GTK theme; defaults from `defaultThemes` by `theme.polarity`.";
+        description = "Active GTK theme";
         defaultText = lib.literalExpression "config.features.gtk.defaultThemes.\${config.features.theme.polarity}";
-        default = config.features.gtk.defaultThemes.${config.features.theme.polarity};
+        default = config.features.gtk.defaultThemes.${polarity};
       };
 
       iconTheme = mkOption {
@@ -74,9 +71,12 @@ mkFeature {
       cursorTheme = mkOption {
         type = themeModule;
         description = "Cursor theme.";
-        defaultText = lib.literalMD "`Bibata-Modern-Classic` (dark polarity) or `Bibata-Modern-Ice` (light) from `pkgs.bibata-cursors`";
+        defaultText = lib.literalMD ''
+          Either `Bibata-Modern-Classic` (dark) or `Bibata-Modern-Ice` (light) depending on
+          the `polarity` set in the `theme` feature.
+        '';
         default = {
-          name = "Bibata-Modern-${if config.features.theme.polarity == "dark" then "Classic" else "Ice"}";
+          name = "Bibata-Modern-${if polarity == "dark" then "Classic" else "Ice"}";
           package = pkgs.bibata-cursors;
         };
       };
@@ -106,17 +106,14 @@ mkFeature {
       };
     };
 
+  nixos = _: { programs.dconf.enable = true; };
+
   home =
-    { config, pkgs, ... }:
+    { config, ... }:
     let
       cfg = config.features.gtk;
     in
     {
-      home.packages = with pkgs; [
-        dconf
-        gnome-tweaks
-      ];
-
       home.pointerCursor = lib.mkDefault {
         enable = true;
         inherit (cfg.cursorTheme) name package;
