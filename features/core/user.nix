@@ -10,14 +10,12 @@ mkFeature {
   doc = {
     summary = "The user account the configuration is for.";
     description = ''
-      Describes the user the configuration is for. It is enabled by default:
-      `username`, `fullName` and `email` come from your globals
-      (`globals.nix`), and `homeDirectory` follows the platform. Other
-      features use these values, e.g. the Emacs feature sets the user's name
-      and mail address from them.
+      Describes the user the configuration is for. It is enabled by default.
+      `username`, `fullName` and `email` are globally set by you (`globals.nix`).
 
-      - **home-manager:** `username` and `homeDirectory` are also handed to
-        home-manager.
+      - Sets the users `homeDirectory`
+
+      **This is a fundamental feature. Other features rely on it being activated**
 
       ```nix
       # globals.nix
@@ -30,12 +28,12 @@ mkFeature {
       ```
     '';
     nixos = ''
-      - **Account:** creates a normal user with `fullName` as its description
-        and `extraGroups` (by default `wheel`, which allows `sudo`).
+      - Creates a normal user with `fullName` as its description
+        and `extraGroups` (`wheel` by default)
     '';
     darwin = ''
-      - **Account:** describes the existing macOS user (home directory and full
-        name); the account itself is created by macOS, not by Nix.
+      - Describes the existing macOS user. The account itself is created by
+        macOS, not by Nix.
     '';
   };
 
