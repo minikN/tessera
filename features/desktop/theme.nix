@@ -2,44 +2,24 @@
 
 let
   mkSchemeAttrs = import ../../lib/mk-scheme-attrs.nix { inherit lib; };
+  rawSchemes = import ../../schemes;
+  baseNames = map (i: "base0${lib.toHexString i}") (lib.range 0 15);
 
-  rawSchemes = {
-    light = {
-      base00 = "ffffff";
-      base01 = "f0f0f0";
-      base02 = "e0e0e0";
-      base03 = "c2c2c2";
-      base04 = "c4c4c4";
-      base05 = "000000";
-      base06 = "595959";
-      base07 = "9f9f9f";
-      base08 = "a60000";
-      base09 = "f5d0a0";
-      base0A = "6f5500";
-      base0B = "00663f";
-      base0C = "005e8b";
-      base0D = "3548cf";
-      base0E = "e07fff";
-      base0F = "624416";
-    };
-    dark = {
-      base00 = "000000";
-      base01 = "1e1e1e";
-      base02 = "313131";
-      base03 = "303030";
-      base04 = "646464";
-      base05 = "ffffff";
-      base06 = "e0e0e0";
-      base07 = "0000c0";
-      base08 = "ff5f59";
-      base09 = "ff6b55";
-      base0A = "d0bc00";
-      base0B = "6ae4b9";
-      base0C = "00d3d0";
-      base0D = "79a8ff";
-      base0E = "b6a0ff";
-      base0F = "7a6100";
-    };
+  ## default syntax roles
+  syntaxDefaults = {
+    comment = "base03";
+    docstring = "base03";
+    variable = "base08";
+    constant = "base09";
+    number = "base09";
+    type = "base0A";
+    string = "base0B";
+    builtin = "base0C";
+    regexp = "base0C";
+    function = "base0D";
+    keyword = "base0E";
+    operator = "base05";
+    preprocessor = "base0F";
   };
 
   other = polarity: if polarity == "dark" then "light" else "dark";
@@ -48,20 +28,61 @@ mkFeature {
   name = "theme";
 
   doc = {
-    summary = "A light or dark colour scheme shared by all features";
+    summary = "A colour scheme with a light and a dark variant, used by features";
     description = ''
-      Holds the base16 colour scheme that other features take their colours
-      from, e.g. ghostty, sway, rofi, choose-gui and the GTK theme. `polarity`
-      picks the built-in light or dark scheme, `scheme` can replace it
-      entirely, and `wallpaper` sets a background for window managers that
-      show one.
+      Holds the base16 colour scheme that other features take their colours from.
+      `scheme` comes in a light and a dark variant, `polarity` picks one of them,
+      and `wallpaper` sets a background for window managers that show one.
 
-      - **Shared with other features:** they use these options even when this
-        feature is disabled, so setting `polarity` or `scheme` is enough;
-        enabling the feature is only needed for `enableToggle`
+      **Built-in schemes:**
+      - `default` (modus themes based)
+      - `monokai-pro`
+
+      **Custom theme:**
+      Set `scheme` to the scheme itself instead of a name: an attrset with a `light`
+      and a `dark` variant, each holding all 16 base16 colours (`base00` to `base0F`)
+      in plain hex, without `#`.
+
+      `polarity` and `enableToggle` pick between the variants. If the theme only has
+      one variant, set `polarity` to it and disable `enableToggle`.
+
+      **Syntax roles**
+      - editors colour strings, keywords, functions and so on after the base16 styling
+      guide, e.g. strings in `base0B`. A scheme that pairs them with other colours lists
+      those roles in `syntax`, each naming the base16 colour to use.
 
       ```nix
-      features.theme.polarity = "dark";
+      features.theme = {
+        enable = true;
+        scheme = "monokai-pro";
+        polarity = "dark";
+      };
+      ```
+
+      Custom inline theme:
+
+      ```nix
+      features.theme.scheme = {
+        light = {
+          base00 = "fafafa"; base01 = "eeeeee"; base02 = "dddddd"; base03 = "999999";
+          base04 = "777777"; base05 = "222222"; base06 = "444444"; base07 = "111111";
+          base08 = "c82829"; base09 = "f5871f"; base0A = "eab700"; base0B = "718c00";
+          base0C = "3e999f"; base0D = "4271ae"; base0E = "8959a8"; base0F = "a3685a";
+        };
+        dark = {
+          base00 = "1d1f21"; base01 = "282a2e"; base02 = "373b41"; base03 = "969896";
+          base04 = "b4b7b4"; base05 = "c5c8c6"; base06 = "e0e0e0"; base07 = "ffffff";
+          base08 = "cc6666"; base09 = "de935f"; base0A = "f0c674"; base0B = "b5bd68";
+          base0C = "8abeb7"; base0D = "81a2be"; base0E = "b294bb"; base0F = "a3685a";
+        };
+        syntax = { string = "base0A"; keyword = "base08"; }; # optnal
+      }
+      ```
+
+      Custom theme file:
+
+      ```nix
+      features.theme.scheme = import ./my-scheme.nix;
       ```
     '';
     nixos = ''
@@ -83,31 +104,69 @@ mkFeature {
           "dark"
         ];
         default = "light";
-        description = "Theme polarity";
+        description = "Which variant of `scheme` to use";
       };
 
       scheme = mkOption {
-        type = types.attrsOf types.str;
-        apply = mkSchemeAttrs;
-        defaultText = lib.literalMD "The built-in light or dark scheme, following `polarity`";
-        default = rawSchemes.${config.features.theme.polarity};
-        description = "Base16 scheme (plain hex; `scheme.withHashtag.*` exposes the `#`-prefixed form)";
+        type = types.coercedTo (types.enum (lib.attrNames rawSchemes)) (name: rawSchemes.${name}) (
+          types.submodule {
+            options = {
+              light = mkOption {
+                type = types.nullOr (types.attrsOf types.str);
+                default = null;
+                description = "`base00` to `base0F` in plain hex";
+              };
+              dark = mkOption {
+                type = types.nullOr (types.attrsOf types.str);
+                default = null;
+                description = "`base00` to `base0F` in plain hex";
+              };
+              syntax = mkOption {
+                type = types.submodule {
+                  options = lib.mapAttrs (
+                    role: slot:
+                    mkOption {
+                      type = types.enum baseNames;
+                      default = slot;
+                      description = "Base16 colour of the `${role}` syntax role";
+                    }
+                  ) syntaxDefaults;
+                };
+                default = { };
+                description = "Which base16 colour each syntax role takes";
+              };
+            };
+          }
+        );
+        default = "default";
+        description = "Base16 scheme: the name of a built-in one, or the scheme itself (`light`, `dark` and optionally `syntax`)";
       };
 
-      defaultSchemes = mkOption {
+      colors = mkOption {
         type = types.attrs;
         readOnly = true;
-        default = lib.mapAttrs (_: mkSchemeAttrs) rawSchemes;
-        description = "Built-in light/dark schemes for consumers that need both palettes";
+        default =
+          let
+            inherit (config.features.theme) scheme polarity;
+          in
+          if scheme.${polarity} != null then
+            mkSchemeAttrs scheme.${polarity}
+          else
+            throw ''features.theme.scheme has no "${polarity}" variant, which polarity = "${polarity}" (or enableToggle) needs.'';
+        defaultText = lib.literalExpression "config.features.theme.scheme.\${config.features.theme.polarity}";
+        description = ''
+          The colours in use. The `polarity` variant of `scheme` in plain hex.
+          `colors.withHashtag.*` exposes the `#`-prefixed form
+        '';
       };
 
       wallpaper = mkOption {
         type = types.nullOr types.path;
         default = null;
-        description = "Wallpaper path; null falls back to a solid colour from `scheme`";
+        description = "Wallpaper path. `null` falls back to a solid colour from `colors`";
       };
 
-      enableToggle = mkEnableOption "runtime light/dark switching via NixOS specialisation";
+      enableToggle = mkEnableOption "runtime light/dark switch";
     };
 
   nixos =
@@ -117,7 +176,6 @@ mkFeature {
       otherPolarity = other cfg.polarity;
     in
     lib.mkIf cfg.enableToggle {
-      ## NOPASSWD so toggle-theme can flip specialisations without prompting.
       security.sudo.extraRules = [
         {
           runAs = "root";
@@ -135,10 +193,10 @@ mkFeature {
         }
       ];
 
-      ## Sibling config with polarity flipped; activated by toggle-theme.
+      ## Sibling config with polarity flipped. Activated by toggle-theme.
       specialisation.${otherPolarity}.configuration = {
         features.theme.polarity = lib.mkForce otherPolarity;
-        features.theme.scheme = lib.mkForce rawSchemes.${otherPolarity};
+        home-manager.sharedModules = [ { features.theme.polarity = lib.mkForce otherPolarity; } ];
       };
     };
 
