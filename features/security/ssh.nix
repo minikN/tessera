@@ -15,9 +15,12 @@ mkFeature {
   doc = {
     summary = "SSH client settings and, on NixOS, an SSH server.";
     description = ''
-      Configures the SSH client: `matchBlocks` holds per-host settings. An
-      ssh-agent is started unless gpg-agent already serves SSH keys (see the
+      Configures the SSH client. `matchBlocks` holds per-host settings. An
+      ssh-agent is started unless gpg-agent already serves SSH keys (see
       gnupg feature).
+
+      **Caution: Turning off the `user` feature will drop the `authorizedKeys`
+      file. Make sure you don't get locked out of a remote machine.**
 
       ```nix
       features.ssh = {
@@ -77,7 +80,6 @@ mkFeature {
   };
 
   home = { config, ... }: {
-    ## Skip ssh-agent when gpg-agent owns the SSH socket.
     services.ssh-agent.enable = mkDefault (!(config.services.gpg-agent.enableSshSupport or false));
 
     programs.ssh = {
@@ -100,7 +102,9 @@ mkFeature {
         };
       };
 
-      users.users.${config.features.user.username}.openssh.authorizedKeys.keyFiles =
-        config.features.ssh.authorizedKeyFiles;
+      users.users = mkIf config.features.user.enable {
+        ${config.features.user.username}.openssh.authorizedKeys.keyFiles =
+          config.features.ssh.authorizedKeyFiles;
+      };
     };
 }
