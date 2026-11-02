@@ -15,22 +15,19 @@ mkFeature {
     summary = "Sets up Emacs as the primary computing environment";
     description = ''
       Installs Emacs and runs it as a daemon. `globals.apps.editor` becomes
-      `emacsclient -c`, exported by the `home` feature as `$EDITOR`. The `emacs.*`
-      features build on this one.
+      `emacsclient -c`, exported by the `home` feature as `$EDITOR`.
 
-      - **Package:** the pure-GTK build on Wayland (`globals.wayland`), the
-        regular build otherwise; see `package`
-      - **Clean frames:** no menu bar, tool bar, scroll bars or splash screen
-      - **State:** history, recent files, places, backups, auto-saves and
-        `custom.el` live in `~/.local/state/emacs`
-      - **Fonts and shell:** uses the font feature's monospace and emoji fonts
-        when it is enabled, and the shell in `globals.apps.shell` for
-        `M-x shell`
+      - Uses the pure-GTK build on Wayland (`globals.wayland`), the regular
+        build otherwise. See `package`
+      - history, recent files, places, backups, auto-saves and `custom.el`
+        live in `''${config.xdg.stateHome}/emacs`
+      - `M-x shell` runs the shell in `globals.apps.shell` (set by e.g. the
+        zsh feature)
     '';
     darwin = ''
-      - **Environment:** the daemon starts from launchd with a bare
-        environment, so on startup Emacs takes `PATH`, the SSH agent socket and
-        home-manager's session variables from the login shell
+      - The daemon starts from launchd with a bare environment, so on startup
+        Emacs takes `PATH`, the SSH agent socket and home-manager's session
+        variables from the login shell
     '';
   };
 
@@ -45,7 +42,7 @@ mkFeature {
     earlyInit = mkOption {
       type = types.lines;
       default = "";
-      description = "early-init.el contents; features contribute via mkElispConfig's `earlyInit`";
+      description = "early-init.el contents. Features can add code via mkElispConfig's `earlyInit`";
     };
   };
 
@@ -62,7 +59,7 @@ mkFeature {
     }:
     let
       cfg = config.features.emacs;
-      inherit (config.features) font user;
+      inherit (config.features) user;
       shell = config.globals.apps.shell;
       stateDir = "${config.xdg.stateHome}/emacs";
       isDarwin = config.globals.platform == "darwin";
@@ -81,7 +78,6 @@ mkFeature {
           package = cfg.package;
         };
 
-        ## Daemon via systemd (NixOS) or launchd (darwin); apps.editor attaches to it.
         services.emacs = {
           enable = true;
           client.enable = true;
@@ -92,8 +88,7 @@ mkFeature {
           ${cfg.earlyInit}
         '';
 
-        ## Emacs won't create these itself; not done in elisp since the config
-        ## is also loaded at build time (byte-compiling default.el).
+        ## Emacs won't create these itself
         home.activation.createEmacsStateDirs =
           lib.hm.dag.entryAfter [ "writeBoundary" ]
             "run mkdir -p ${lib.escapeShellArg "${stateDir}/auto-save"} ${lib.escapeShellArg "${stateDir}/lock"}";
@@ -115,20 +110,6 @@ mkFeature {
           ;; Packages are native-compiled ahead of time by nix.
           (setq native-comp-jit-compilation nil)
           (advice-add 'x-apply-session-resources :override #'ignore)
-          ;; No GUI chrome or splash; set as frame params so it never flashes.
-          (push '(menu-bar-lines . 0) default-frame-alist)
-          (push '(tool-bar-lines . 0) default-frame-alist)
-          (push '(vertical-scroll-bars) default-frame-alist)
-          (push '(horizontal-scroll-bars) default-frame-alist)
-          (setq menu-bar-mode nil
-                tool-bar-mode nil
-                scroll-bar-mode nil
-                inhibit-startup-screen t
-                initial-scratch-message nil)
-          ${optionalString font.enable ''
-            (push '(font . "${font.fonts.monospace.name}-${toString font.fonts.monospace.size}")
-                  default-frame-alist)
-          ''}
         '';
 
         config = ''
@@ -193,13 +174,6 @@ mkFeature {
 
           ${optionalString (shell != null) ''
             (setopt explicit-shell-file-name "${shell}")
-          ''}
-          ${optionalString font.enable ''
-            (defun tessera-emacs--set-emoji-font ()
-              (when (display-graphic-p)
-                (set-fontset-font t 'emoji (font-spec :family "${font.fonts.unicode.name}"))))
-            (tessera-emacs--set-emoji-font)
-            (add-hook 'server-after-make-frame-hook #'tessera-emacs--set-emoji-font)
           ''}
           ${optionalString isDarwin ''
             (require 'exec-path-from-shell)
