@@ -65,7 +65,7 @@ mkFeature {
       font = config.features.font;
       mono = font.fonts.monospace;
       theme = config.features.theme;
-      hex = theme.scheme.withHashtag;
+      hex = theme.colors.withHashtag;
     in
     {
       programs.ghostty = {
@@ -109,7 +109,7 @@ mkFeature {
             cursor-color = base05;
             foreground = base05;
             palette = [
-              "0=${base05}"
+              "0=${base00}"
               "1=${base08}"
               "2=${base0B}"
               "3=${base0A}"
@@ -124,7 +124,7 @@ mkFeature {
               "12=${base0D}"
               "13=${base0E}"
               "14=${base0C}"
-              "15=${base06}"
+              "15=${base07}"
             ];
             selection-background = base02;
             selection-foreground = base05;
