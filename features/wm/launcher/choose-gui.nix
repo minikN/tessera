@@ -80,7 +80,7 @@ mkFeature {
       '';
 
       pass = pkgs.writeShellScriptBin "choose-pass" ''
-        export PASSWORD_STORE_DIR="${config.features.password-store.storeDir}"
+        ${lib.optionalString config.features.password-store.enable ''export PASSWORD_STORE_DIR="${config.features.password-store.storeDir}"''}
         ${lib.optionalString config.features.gnupg.enable ''export GNUPGHOME="${config.features.gnupg.storeDir}"''}
         export PATH="${lib.makeBinPath [ config.features.password-store.package ]}:$PATH"
 
