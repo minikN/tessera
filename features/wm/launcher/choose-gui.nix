@@ -6,15 +6,27 @@ mkFeature {
   doc = {
     summary = "choose, a fuzzy finder for macOS, as launcher and password menu.";
     description = ''
-      Uses choose (choose-gui), styled with the shared colours (and the
-      monospace font when the font feature is enabled), for two global apps:
+      Installs and configures choose (choose-gui).
 
-      - **Launcher** (`globals.apps.launcher`): lists the installed `.app`
-        bundles and opens the one you pick. Disable with `enableLauncher = false`.
-      - **Password manager** (`globals.apps.passwordManager`): pick a pass
-        entry, then copy its password, username, URL or one-time code. It uses
-        the password-store and gnupg features' settings. Disable with
-        `enablePasswordManager = false`.
+      If the `theme` and `font` features are enabled, choose's visuals will be adapted
+      accordingly.
+
+      - `enableLauncher`: Sets choose as the global app launcher and sets
+        `globals.apps.launcher` to the choose bin path so other features can
+        reference it
+      - `enablePasswordManager`: Sets choose as the password manager. Requires the
+        `password-store` feature to be enabled. Sets `globals.apps.passwordManager`
+        to the bin path of choose so other features can reference it.
+
+      ```nix
+      features = {
+        choose-gui = {
+          enable = true;
+          enableLauncher = false;
+        };
+        password-store.enable = true;
+      };
+      ```
     '';
   };
 
@@ -45,49 +57,43 @@ mkFeature {
     let
       cfg = config.features.choose-gui;
 
-      ## Themed choose invocation: monospace font + base16 colours. choose wants
-      ## bare hex (no leading #), so use the plain scheme, not withHashtag.
-      chooseCmd =
+      cmd =
         let
           font = config.features.font;
           mono = font.fonts.monospace;
-          scheme = config.features.theme.scheme;
+          theme = config.features.theme;
+          scheme = theme.scheme;
         in
         "${cfg.package}/bin/choose"
         + lib.optionalString font.enable " -f ${lib.escapeShellArg mono.name} -s ${toString (mono.size * 3 / 2)}"
-        + " -c ${scheme.base0D}"
-        + " -b ${scheme.base02}";
+        + lib.optionalString theme.enable " -c ${scheme.base0D} -b ${scheme.base02}";
 
-      ## macOS drun-equivalent: list installed .app bundles, fuzzy-pick one with
-      ## choose-gui, then open it. (choose-gui's binary is `choose`.)
       launcher = pkgs.writeShellScript "choose-launcher" ''
-        dirs=(/Applications /System/Applications "$HOME/Applications")
+        dirs=(/Applications /System/Applications "$HOME/Applications" /System/Library/CoreServices/Finder.app)
         choice=$(
           /usr/bin/find "''${dirs[@]}" -maxdepth 2 -name '*.app' 2>/dev/null \
             | /usr/bin/sed 's|.*/||; s|\.app$||' \
             | /usr/bin/sort -u \
-            | ${chooseCmd}
+            | ${cmd}
         )
         [ -n "$choice" ] && /usr/bin/open -a "$choice"
       '';
 
-      ## pass front-end: pick an entry with choose-gui, then a second prompt for
-      ## what to copy (password / username / URL / OTP) onto the clipboard.
-      passExec = pkgs.writeShellScriptBin "choose-pass" ''
+      pass = pkgs.writeShellScriptBin "choose-pass" ''
         export PASSWORD_STORE_DIR="${config.features.password-store.storeDir}"
-        export GNUPGHOME="${config.features.gnupg.storeDir}"
+        ${lib.optionalString config.features.gnupg.enable ''export GNUPGHOME="${config.features.gnupg.storeDir}"''}
         export PATH="${lib.makeBinPath [ config.features.password-store.package ]}:$PATH"
 
         entry=$(
           /usr/bin/find "$PASSWORD_STORE_DIR" -type f -name '*.gpg' 2>/dev/null \
             | /usr/bin/sed -e "s|^$PASSWORD_STORE_DIR/||" -e 's/\.gpg$//' \
             | /usr/bin/sort \
-            | ${chooseCmd}
+            | ${cmd}
         )
         [ -z "$entry" ] && exit 0
 
         action=$(printf '%s\n' 'Copy password' 'Copy username' 'Copy URL' 'Copy OTP' \
-          | ${chooseCmd})
+          | ${cmd})
 
         copy () { printf '%s' "$1" | /usr/bin/pbcopy; }
         ## Pull a `key: value` line (case-insensitive) from the entry body.
@@ -109,9 +115,9 @@ mkFeature {
     {
       apps.launcher = lib.mkIf cfg.enableLauncher (lib.mkForce (toString launcher));
 
-      apps.passwordManager = lib.mkIf cfg.enablePasswordManager (
-        lib.mkForce "${passExec}/bin/choose-pass"
-      );
+      apps.passwordManager = lib.mkIf (
+        cfg.enablePasswordManager && config.features.password-store.enable
+      ) (lib.mkForce "${pass}/bin/choose-pass");
     };
 
   home =
