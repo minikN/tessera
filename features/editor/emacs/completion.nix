@@ -12,20 +12,20 @@ mkFeature {
   ];
 
   doc = {
-    summary = "Minibuffer completion with Vertico, Orderless, Marginalia, Consult and Embark.";
+    summary = "Minibuffer completion with Vertico, Orderless, Marginalia, Consult and Embark";
     description = ''
       Sets up the completion packages that work together in the minibuffer,
       configured as their authors recommend.
 
       - **Vertico:** shows candidates in a vertical list, also for completion
-        in buffers (`completion-at-point`).
+        in buffers (`completion-at-point`)
       - **Orderless:** type space-separated parts in any order; file names
-        also match by their prefixes (`partial-completion`).
-      - **Marginalia:** annotations next to candidates; `M-A` cycles them.
+        also match by their prefixes (`partial-completion`)
+      - **Marginalia:** annotations next to candidates; `M-A` cycles them
       - **Consult:** replaces built-in commands at their usual keys and adds
         search and navigation commands under `M-s` and `M-g`.
-        `consult-ripgrep` uses ripgrep from Nix.
-      - **Embark:** acts on the candidate or the thing at point.
+        `consult-ripgrep` uses ripgrep from Nix
+      - **Embark:** acts on the candidate or the thing at point
 
       | Keys | Command |
       |------|---------|

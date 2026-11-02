@@ -4,14 +4,14 @@ mkFeature {
   name = "bash";
 
   doc = {
-    summary = "Bash as the login shell.";
+    summary = "Bash as the login shell";
     description = ''
       Installs interactive Bash with completion and registers it as
       `globals.apps.shell`.
 
       - **Files:** history goes to `~/.local/state/bash/history`;
-        `extraConfig` is appended to `.bash_profile`.
-      - **Keys:** `keybindings` are readline bindings, written to `~/.inputrc`.
+        `extraConfig` is appended to `.bash_profile`
+      - **Keys:** `keybindings` are readline bindings, written to `~/.inputrc`
 
       It cannot be enabled together with other shell feature.
     '';
@@ -22,7 +22,7 @@ mkFeature {
     extraConfig = lib.mkOption {
       type = lib.types.lines;
       default = "";
-      description = "Extra lines appended to .bash_profile.";
+      description = "Extra lines appended to .bash_profile";
     };
     keybindings = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
@@ -30,7 +30,7 @@ mkFeature {
       example = {
         "\\e[A" = "history-search-backward";
       };
-      description = "Readline keybindings (key sequence = function), written to ~/.inputrc.";
+      description = "Readline keybindings (key sequence = function), written to ~/.inputrc";
     };
   };
 

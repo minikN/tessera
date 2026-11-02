@@ -5,7 +5,7 @@ mkFeature {
   enableByDefault = true;
 
   doc = {
-    summary = "GRUB as the boot loader on UEFI systems.";
+    summary = "GRUB as the boot loader on UEFI systems";
     description = ''
       Enabled by default on NixOS. Installs GRUB for UEFI and lets it update
       the EFI variables; other operating systems on the machine appear in the

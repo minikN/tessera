@@ -13,7 +13,7 @@ let
       enable = mkOption {
         type = types.bool;
         default = true;
-        description = "Whether to include this window.";
+        description = "Whether to include this window";
       };
       side = mkOption {
         type = types.enum [
@@ -22,31 +22,31 @@ let
           "top"
           "bottom"
         ];
-        description = "Frame side of the window.";
+        description = "Frame side of the window";
       };
       slot = mkOption {
         type = types.int;
         default = 0;
-        description = "Position among windows on the same side; negative is left/above, positive right/below.";
+        description = "Position among windows on the same side; negative is left/above, positive right/below";
       };
       size = mkOption {
         type = types.number;
-        description = "Width (left/right) or height (top/bottom): a fraction of the frame, or columns/lines.";
+        description = "Width (left/right) or height (top/bottom): a fraction of the frame, or columns/lines";
       };
       names = mkOption {
         type = types.listOf types.str;
         default = [ ];
-        description = "Regexps matched against buffer names.";
+        description = "Regexps matched against buffer names";
       };
       modes = mkOption {
         type = types.listOf types.str;
         default = [ ];
-        description = "Major modes; modes derived from them match too.";
+        description = "Major modes; modes derived from them match too";
       };
       key = mkOption {
         type = types.nullOr types.str;
         default = null;
-        description = "Key selecting this window in `tessera-window-management-map`.";
+        description = "Key selecting this window in `tessera-window-management-map`";
       };
     };
   };
@@ -58,7 +58,7 @@ mkFeature {
   ];
 
   doc = {
-    summary = "Predictable buffer display in side windows.";
+    summary = "Predictable buffer display in side windows";
     description = ''
       Where Emacs shows a buffer normally depends on whoever displays it. This
       feature assigns buffers to a configurable set of side windows, and every
@@ -78,13 +78,13 @@ mkFeature {
 
       - **Matching buffers:** each window lists buffer-name regexps and major
         modes. A mode also matches the modes derived from it, so `comint-mode`
-        covers `M-x shell`, `M-x ielm` and other REPLs.
+        covers `M-x shell`, `M-x ielm` and other REPLs
       - **Main window:** a buffer opened from a side window that doesn't
         belong there (e.g. a file opened from a shell) goes to the main area,
-        so side windows keep their buffers. `C-x b` follows the rules too.
+        so side windows keep their buffers. `C-x b` follows the rules too
       - **Customize:** the layout is the default of
         `tessera-window-management-windows`; changes saved with
-        `M-x customize` take precedence.
+        `M-x customize` take precedence
 
       With the keymaps feature, the commands live under `C-c w`. Each window
       has a key, by default following its position on screen: `h` left, `j`
@@ -125,17 +125,17 @@ mkFeature {
     windows = mkOption {
       type = types.attrsOf windowType;
       default = { };
-      description = "Side windows; the default of `tessera-window-management-windows`.";
+      description = "Side windows; the default of `tessera-window-management-windows`";
     };
     focusSize = mkOption {
       type = types.number;
       default = 0.5;
-      description = "Default of `tessera-window-management-focus-size`.";
+      description = "Default of `tessera-window-management-focus-size`";
     };
     key = mkOption {
       type = types.str;
       default = "w";
-      description = "Key under `C-c` for `tessera-window-management-map`.";
+      description = "Key under `C-c` for `tessera-window-management-map`";
     };
   };
 

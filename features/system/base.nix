@@ -15,16 +15,16 @@ mkFeature {
   enableByDefault = true;
 
   doc = {
-    summary = "Basic system settings: time zone, locale and Nix.";
+    summary = "Basic system settings: time zone, locale and Nix";
     description = ''
       Enabled by default. Sets the time zone (`timeZone`) and enables flakes
       and the `nix` command.
     '';
     nixos = ''
-      - **Locale:** `locale` sets the system locale.
+      - **Locale:** `locale` sets the system locale
     '';
     darwin = ''
-      - **Nix:** uses Lix as the Nix implementation.
+      - **Nix:** uses Lix as the Nix implementation
     '';
   };
 
@@ -32,12 +32,12 @@ mkFeature {
     timeZone = mkOption {
       type = types.str;
       default = "Europe/Berlin";
-      description = "System time zone.";
+      description = "System time zone";
     };
     locale = mkOption {
       type = types.str;
       default = "en_US.UTF-8";
-      description = "Default locale.";
+      description = "Default locale";
     };
   };
 

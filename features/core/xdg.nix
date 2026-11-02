@@ -15,7 +15,7 @@ mkFeature {
   enableByDefault = true;
 
   doc = {
-    summary = "Standard XDG folders for configuration, data, caches and documents.";
+    summary = "Standard XDG folders for configuration, data, caches and documents";
     description = ''
       Points home-manager's XDG base directories to `baseDirs`, so programs and
       other features keep their files in the usual places: configuration in
@@ -24,19 +24,19 @@ mkFeature {
 
       - **User folders:** `userDirs` defines the folders for documents,
         downloads, music, pictures, public files and videos; entries set to
-        `null` are left out.
+        `null` are left out
     '';
     nixos = ''
-      - **User folders:** registered with `xdg-user-dirs` and created.
-      - **Default applications:** home-manager manages the MIME associations.
+      - **User folders:** registered with `xdg-user-dirs` and created
+      - **Default applications:** home-manager manages the MIME associations
       - **Portals:** desktop portals (GTK, plus wlroots when a Wayland
         compositor like sway sets `globals.wayland`) let applications open file
-        pickers and share the screen.
+        pickers and share the screen
     '';
     darwin = ''
       - **User folders:** created and exported as `XDG_*_DIR` environment
         variables. Their names are capitalized (`~/Documents`) to match macOS;
-        see `capitalizeUserDirs`.
+        see `capitalizeUserDirs`
     '';
   };
 
@@ -53,11 +53,11 @@ mkFeature {
         type = types.bool;
         defaultText = lib.literalMD "`true` on macOS, `false` on Linux";
         default = config.globals.platform == "darwin";
-        description = "Capitalize XDG user-dir basenames (defaults true on darwin).";
+        description = "Capitalize XDG user-dir basenames (defaults true on darwin)";
       };
 
       baseDirs = mkOption {
-        description = "XDG base directories; forced into home-manager's xdg.*Home.";
+        description = "XDG base directories; forced into home-manager's xdg.*Home";
         defaultText = lib.literalMD "`~/.config`, `~/.local/share`, `~/.cache` and `~/.local/state` in the user's home directory";
         default = {
           configHome = "${home}/.config";
@@ -69,19 +69,19 @@ mkFeature {
           options = {
             configHome = mkOption {
               type = types.str;
-              description = "XDG_CONFIG_HOME.";
+              description = "XDG_CONFIG_HOME";
             };
             dataHome = mkOption {
               type = types.str;
-              description = "XDG_DATA_HOME.";
+              description = "XDG_DATA_HOME";
             };
             cacheHome = mkOption {
               type = types.str;
-              description = "XDG_CACHE_HOME.";
+              description = "XDG_CACHE_HOME";
             };
             stateHome = mkOption {
               type = types.str;
-              description = "XDG_STATE_HOME.";
+              description = "XDG_STATE_HOME";
             };
           };
         };
@@ -89,7 +89,7 @@ mkFeature {
 
       userDirs = mkOption {
         type = types.attrsOf (types.nullOr types.str);
-        description = "XDG user dirs (null entries omitted).";
+        description = "XDG user dirs (null entries omitted)";
         defaultText = lib.literalMD "`documents`, `downloads`, `music`, `pictures`, `public` and `videos` in the user's home directory (capitalized with `capitalizeUserDirs`); `desktop` and `templates` unset";
         default = {
           desktop = null;

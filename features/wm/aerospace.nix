@@ -9,7 +9,7 @@ mkFeature {
   name = "aerospace";
 
   doc = {
-    summary = "AeroSpace, a tiling window manager for macOS.";
+    summary = "AeroSpace, a tiling window manager for macOS";
     description = ''
       Runs AeroSpace, restarting it if it quits, and registers it as
       `globals.apps.wm`. Windows are tiled with 12 pixel gaps across ten
@@ -54,27 +54,27 @@ mkFeature {
       modifier = mkOption {
         type = types.str;
         default = "cmd";
-        description = "Modifier that AeroSpace keys are bound to.";
+        description = "Modifier that AeroSpace keys are bound to";
       };
       left = mkOption {
         type = types.str;
         default = "left";
-        description = "Key for the left orientation.";
+        description = "Key for the left orientation";
       };
       right = mkOption {
         type = types.str;
         default = "right";
-        description = "Key for the right orientation.";
+        description = "Key for the right orientation";
       };
       up = mkOption {
         type = types.str;
         default = "up";
-        description = "Key for the up orientation.";
+        description = "Key for the up orientation";
       };
       down = mkOption {
         type = types.str;
         default = "down";
-        description = "Key for the down orientation.";
+        description = "Key for the down orientation";
       };
 
       keybindings = mkOption {
@@ -92,13 +92,13 @@ mkFeature {
               ;
             inherit (config.globals) apps;
           };
-        description = "Keybindings merged over the defaults: an attrset, or a function of `{ modifier, left, right, up, down, apps, ... }`.";
+        description = "Keybindings merged over the defaults: an attrset, or a function of `{ modifier, left, right, up, down, apps, ... }`";
       };
 
       extraConfig = mkOption {
         type = types.attrs;
         default = { };
-        description = "Extra AeroSpace settings, recursively merged over the defaults.";
+        description = "Extra AeroSpace settings, recursively merged over the defaults";
       };
     };
 

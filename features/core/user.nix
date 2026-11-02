@@ -8,7 +8,7 @@ mkFeature {
   enableByDefault = true;
 
   doc = {
-    summary = "The user account the configuration is for.";
+    summary = "The user account the configuration is for";
     description = ''
       Describes the user the configuration is for. It is enabled by default.
       `username`, `fullName` and `email` are globally set by you (`globals.nix`).
@@ -33,7 +33,7 @@ mkFeature {
     '';
     darwin = ''
       - Describes the existing macOS user. The account itself is created by
-        macOS, not by Nix.
+        macOS, not by Nix
     '';
   };
 
@@ -42,19 +42,19 @@ mkFeature {
       type = types.str;
       defaultText = lib.literalExpression "config.globals.user.user";
       default = config.globals.user.user or "user";
-      description = "Username.";
+      description = "Username";
     };
     fullName = mkOption {
       type = types.str;
       defaultText = lib.literalExpression "config.globals.user.fullName";
       default = config.globals.user.fullName or "";
-      description = "Full name.";
+      description = "Full name";
     };
     email = mkOption {
       type = types.str;
       defaultText = lib.literalExpression "config.globals.user.email";
       default = config.globals.user.email or "";
-      description = "Email address.";
+      description = "Email address";
     };
     homeDirectory = mkOption {
       type = types.str;
@@ -64,12 +64,12 @@ mkFeature {
           "/Users/${config.features.user.username}"
         else
           "/home/${config.features.user.username}";
-      description = "Home directory.";
+      description = "Home directory";
     };
     extraGroups = mkOption {
       type = types.listOf types.str;
       default = [ "wheel" ];
-      description = "Extra NixOS groups.";
+      description = "Extra NixOS groups";
     };
   };
 

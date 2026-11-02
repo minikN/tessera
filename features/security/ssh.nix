@@ -13,7 +13,7 @@ mkFeature {
   name = "ssh";
 
   doc = {
-    summary = "SSH client settings and, on NixOS, an SSH server.";
+    summary = "SSH client settings and, on NixOS, an SSH server";
     description = ''
       Configures the SSH client. `matchBlocks` holds per-host settings. An
       ssh-agent is started unless gpg-agent already serves SSH keys (see
@@ -33,7 +33,7 @@ mkFeature {
       - **Server:** `daemon.enable` runs sshd and opens its port. Password and
         root logins are off by default (`daemon.passwordAuthentication`,
         `daemon.permitRootLogin`); `authorizedKeyFiles` lists the public keys
-        that may log in as the user.
+        that may log in as the user
 
         ```nix
         features.ssh = {
@@ -51,7 +51,7 @@ mkFeature {
       passwordAuthentication = mkOption {
         type = types.bool;
         default = false;
-        description = "Allow password (and keyboard-interactive) authentication.";
+        description = "Allow password (and keyboard-interactive) authentication";
       };
       permitRootLogin = mkOption {
         type = types.enum [
@@ -62,20 +62,20 @@ mkFeature {
           "forced-commands-only"
         ];
         default = "no";
-        description = "Value for sshd's PermitRootLogin.";
+        description = "Value for sshd's PermitRootLogin";
       };
     };
 
     authorizedKeyFiles = mkOption {
       type = types.listOf types.path;
       default = [ ];
-      description = "Public key files authorized for the user.";
+      description = "Public key files authorized for the user";
     };
 
     matchBlocks = mkOption {
       type = types.attrs;
       default = { };
-      description = "SSH client match-block stanzas.";
+      description = "SSH client match-block stanzas";
     };
   };
 

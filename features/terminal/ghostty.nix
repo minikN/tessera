@@ -27,7 +27,7 @@ mkFeature {
       type = lib.types.package;
       default = if config.globals.platform == "darwin" then pkgs.ghostty-bin else pkgs.ghostty;
       defaultText = lib.literalExpression "ghostty-bin on darwin, ghostty on linux";
-      description = "Ghostty package for the current platform.";
+      description = "Ghostty package for the current platform";
     };
     settings = lib.mkOption {
       type = lib.types.attrs;
@@ -36,7 +36,7 @@ mkFeature {
         font-size = 14;
         cursor-style = "bar";
       };
-      description = "Extra settings merged into `programs.ghostty.settings` (override defaults).";
+      description = "Extra settings merged into `programs.ghostty.settings` (override defaults)";
     };
     keybindings = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
@@ -44,7 +44,7 @@ mkFeature {
       example = {
         "ctrl+shift+t" = "new_tab";
       };
-      description = "Keybindings (trigger = action) added to Ghostty's defaults.";
+      description = "Keybindings (trigger = action) added to Ghostty's defaults";
     };
   };
 

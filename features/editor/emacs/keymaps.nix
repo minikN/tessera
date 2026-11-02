@@ -15,7 +15,7 @@ mkFeature {
   ];
 
   doc = {
-    summary = "Prefix keymaps that make every Emacs feature's keys predictable.";
+    summary = "Prefix keymaps that make every Emacs feature's keys predictable";
     description = ''
       Every tessera feature makes its commands available in the same few
       places, so you can guess where a key lives before looking it up.
@@ -39,9 +39,9 @@ mkFeature {
 
       - **Finding keys:** pause after a prefix such as `C-c` and which-key
         lists what follows; `C-h` after a prefix lists its keys with
-        completion; `M-x describe-keymap` shows a whole keymap.
+        completion; `M-x describe-keymap` shows a whole keymap
       - **Toggles:** `C-c t` toggles modes. A lowercase key toggles a mode in
-        the current buffer, the uppercase key its global variant.
+        the current buffer, the uppercase key its global variant
 
       | Key | Toggles |
       |-----|---------|
@@ -56,20 +56,20 @@ mkFeature {
 
       1. Built-ins first: replace a built-in command through a remap, and put
          commands that fit an Emacs prefix map there (`M-g` go to, `M-s`
-         search, `C-x p` projects, `C-h` help).
+         search, `C-x p` projects, `C-h` help)
       2. Everything else goes under `C-c` and a letter. Each letter is a
          domain; a feature gets its own letter only for a domain of its own,
          otherwise one key in `C-c a`, with a keymap of its own if it has
-         several commands.
+         several commands
       3. Packages define keymaps but never bind them; the feature's
          configuration binds them inside
          `(with-eval-after-load 'tessera-keymaps …)`, so nothing is bound when
-         this feature is off.
+         this feature is off
       4. Keys are Nix options: `key` for a single entry point, `keys.<name>`
-         when there are several.
-      5. Every prefix has a label, shown by which-key.
+         when there are several
+      5. Every prefix has a label, shown by which-key
       6. Keys recommended upstream stay where they don't fit `C-c`, such as
-         Embark's `C-.`.
+         Embark's `C-.`
 
       A feature with one entry point declares a `key` option and binds its
       command in the applications map:
@@ -78,7 +78,7 @@ mkFeature {
       options.key = lib.mkOption {
         type = lib.types.str;
         default = "e";
-        description = "Key in `tessera-app-map`.";
+        description = "Key in `tessera-app-map`";
       };
 
       home = { config, ... }: {
@@ -104,12 +104,12 @@ mkFeature {
       app = mkOption {
         type = types.str;
         default = "a";
-        description = "Key under `C-c` for `tessera-app-map`.";
+        description = "Key under `C-c` for `tessera-app-map`";
       };
       toggle = mkOption {
         type = types.str;
         default = "t";
-        description = "Key under `C-c` for `tessera-toggle-map`.";
+        description = "Key under `C-c` for `tessera-toggle-map`";
       };
     };
   };
