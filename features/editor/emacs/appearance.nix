@@ -212,7 +212,9 @@ mkFeature {
         elispPackages = epkgs: [ epkgs.modus-themes ];
 
         earlyInit = ''
-          ${lib.optionalString (theme.enable && cfg.useScheme) ''(add-to-list 'custom-theme-load-path "${themeDir}")''}
+          ${lib.optionalString (
+            theme.enable && cfg.useScheme
+          ) ''(add-to-list 'custom-theme-load-path "${themeDir}")''}
           (push '(menu-bar-lines . 0) default-frame-alist)
           (push '(tool-bar-lines . 0) default-frame-alist)
           (push '(vertical-scroll-bars) default-frame-alist)
@@ -277,7 +279,9 @@ mkFeature {
             :initialize #'custom-initialize-default
             :set #'tessera-appearance--set)
 
-          (defcustom tessera-appearance-header-line-as-mode-line ${if cfg.headerLineAsModeLine then "t" else "nil"}
+          (defcustom tessera-appearance-header-line-as-mode-line ${
+            if cfg.headerLineAsModeLine then "t" else "nil"
+          }
             "Non-nil means show the mode line at the top of windows, in the header line."
             :type 'boolean
             :initialize #'custom-initialize-default
