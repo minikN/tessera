@@ -12,7 +12,7 @@ let
 
   helpers = {
     inherit mkFeature mkElispConfig;
-    tessera = { inherit types; };
+    tessera = { inherit types mkDocs features; };
   };
   features = discover.discoverFeatures ../features helpers;
 
