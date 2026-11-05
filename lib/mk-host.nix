@@ -25,7 +25,7 @@ let
     imports = map (
       profile:
       inputs.nixos-hardware.nixosModules.${profile}
-        or (throw "host ${name}: unknown hardware profile '${profile}'; see the flake output `hardwareProfiles`")
+        or (throw "host ${name}: unknown hardware profile '${profile}'; see `tessera.lib.hardwareProfiles`")
     ) (hostDef.hardware or [ ]);
   };
 

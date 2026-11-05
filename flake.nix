@@ -35,7 +35,6 @@
     in
     {
       inherit lib;
-      hardwareProfiles = builtins.attrNames inputs.nixos-hardware.nixosModules;
 
       packages = forAllSystems (pkgs: {
         docs = lib.mkDocs {
