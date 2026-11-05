@@ -76,17 +76,24 @@ let
   ## Where the feature's page goes: "wm/launcher/rofi.md".
   pathOf = f: "${categoryOf f}/${nameOf f}.md";
 
-  ## Which of the three platforms the feature works on. `supports` comes from
-  ## mkFeature. A home-manager-only setup works on any OS, so "home" counts
-  ## if either evaluation supports it.
+  ## Which of the platforms the feature supports
   supported = f: {
-    home = lib.any (e: f.supports "home" (argsOf e)) [
-      contexts.nixos
-      contexts.darwin
-    ];
+    homeLinux = f.supports "home" (argsOf contexts.nixos);
+    homeMacos = f.supports "home" (argsOf contexts.darwin);
     nixos = f.supports "nixos" (argsOf contexts.nixos);
     darwin = f.supports "darwin" (argsOf contexts.darwin);
   };
+
+  homeMark =
+    p:
+    if p.homeLinux && p.homeMacos then
+      "✓"
+    else if p.homeLinux then
+      "✓ (Linux)"
+    else if p.homeMacos then
+      "✓ (macOS)"
+    else
+      "—";
 
   ## Every option below `features`, as a flat list. Each entry has the
   ## option's name, description, type, default and so on. Options hidden
@@ -154,7 +161,7 @@ let
 
       | Home | NixOS | macOS |
       |:----:|:-----:|:-----:|
-      | ${mark p.home} | ${mark p.nixos} | ${mark p.darwin} |
+      | ${homeMark p} | ${mark p.nixos} | ${mark p.darwin} |
 
       ${f.doc.description}
       ${section "On NixOS" (f.doc.nixos or null)}
