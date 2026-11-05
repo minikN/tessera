@@ -47,4 +47,5 @@ in
     features
     ;
   inherit (discover) discoverFeatures discoverHosts;
+  hardwareProfiles = builtins.attrNames inputs.nixos-hardware.nixosModules;
 }
