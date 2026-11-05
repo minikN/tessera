@@ -97,12 +97,15 @@ name. The only required key is `system`; the platform is inferred from it.
 wiring an agenix secret path into a feature:
 
 ```nix
+# hosts/slimboy.nix
+# ...
 features = { config, ... }: {
   nas = {
     enable = true;
     credentialsFile = config.age.secrets.smb-credentials.path;
   };
 };
+# ...
 ```
 
 | Key        | Required | Purpose                                                   |
@@ -127,58 +130,40 @@ platform blocks (`nixos`, `darwin`, `home`) plus shared options and a
 contribution to the global namespace. Every block is independently optional.
 Your own features look exactly like tessera's.
 
-### Minimal feature
+Put a feature anywhere in the folder you pass as `features` to `mkFlake`;
+there is nothing to import, it is picked up automatically:
 
 ```nix
-# features/shell/zsh.nix
+# features/shell/fish.nix
 { lib, mkFeature, ... }:
 
 mkFeature {
-  name = "zsh";
-
-  options = { pkgs, ... }: {
-    package = lib.mkPackageOption pkgs "zsh" { };
-  };
-
-  home = { config, ... }: {
-    programs.zsh.enable = true;
-    programs.zsh.package = config.features.zsh.package;
-  };
-}
-```
-
-Enable on any host with `features.zsh.enable = true;`.
-
-### Full anatomy
-
-```nix
-mkFeature {
-  name = "myFeature";        # string or list of strings (nested: ["foo" "bar"])
+  name = "fish";             # string or list of strings (nested: ["foo" "bar"])
   enableByDefault = false;   # if true, the feature is on unless a host disables it
   platforms = null;          # optional subset of [ "home" "nixos" "darwin" ] (see below)
 
-  doc = {
-    summary = "One line.";
-    description = "Markdown that applies everywhere.";
-    nixos = "Markdown, NixOS only (optional).";
-    darwin = "Markdown, macOS only (optional).";
+  # Options live under features.fish.*
+  # An `enable` option is always synthesized — don't redeclare it.
+  options = { pkgs, ... }: {
+    package = lib.mkPackageOption pkgs "fish" { };
   };
 
-  options = { config, pkgs, ... }: {
-    # Options live under features.<name>.*
-    # An `enable` option is always synthesized — don't redeclare it.
-  };
-
+  # Optional. Contributions to config.globals.*
   globals = { config, ... }: {
-    # Optional. Contributions to config.globals.*
-    # e.g. apps.shell = lib.mkIf config.features.zsh.enable "...";
+    apps.shell = lib.mkIf config.features.fish.enable
+      "${config.features.fish.package}/bin/fish";
   };
 
-  nixos  = { config, pkgs, ... }: { ... };  # only goes into NixOS hosts
-  darwin = { config, pkgs, ... }: { ... };  # only goes into darwin hosts
-  home   = { config, pkgs, ... }: { ... };  # goes into the user's home-manager config
+  nixos  = { ... }: { programs.fish.enable = true; };  # only goes into NixOS hosts
+  darwin = { ... }: { programs.fish.enable = true; };  # only goes into darwin hosts
+  home   = { config, ... }: {                          # goes into the user's home-manager config
+    programs.fish.enable = true;
+    programs.fish.package = config.features.fish.package;
+  };
 }
 ```
+
+Enable it on any host with `features.fish.enable = true;`.
 
 Each block's body is automatically wrapped in
 `mkIf config.features.<name>.enable`, so you don't gate it yourself. The
@@ -195,34 +180,6 @@ on by default are left alone.
 
 **Dependencies.** A nested feature (`emacs.keymaps`) requires its parent
 (`emacs`); Enabling a feature without its requirements is an error.
-
-**Documentation.** `nix build .#docs` turns the `doc` blocks and option
-descriptions into a website, `nix build .#docs.man` into the `tessera(5)`
-man page that the `manual` feature installs (`man tessera`). In tessera, `nix flake check` fails when a
-feature has no `doc` block with a `summary` and a `description`, or when an
-option has no description.
-
-### Cross-platform feature
-
-```nix
-# features/system/base.nix
-{ lib, mkFeature, ... }:
-
-mkFeature {
-  name = "base";
-  enableByDefault = true;
-
-  options = {
-    timeZone = lib.mkOption {
-      type = lib.types.str;
-      default = "Europe/Berlin";
-    };
-  };
-
-  nixos  = { config, ... }: { time.timeZone = config.features.base.timeZone; };
-  darwin = { config, ... }: { time.timeZone = config.features.base.timeZone; };
-}
-```
 
 ### Keybindings
 
@@ -291,6 +248,42 @@ globals = { config, ... }: {
 };
 ```
 
+## Documentation
+
+Every tessera feature is documented, and the documentation is built as a
+website, as Markdown and as a man page:
+
+```bash
+nix build github:minikN/tessera#docs
+open result/html/index.html   # the website (xdg-open on Linux)
+ls result/markdown            # the Markdown it is built from
+```
+
+The man page, `tessera(5)`, is installed by the `manual` feature, which is
+enabled by default. So even a host that only sets its system, and gets
+nothing but the features that are on by default (`home`, `user`, `xdg`,
+`base`, `bootloader` (NixOS only) and `manual`), has it:
+
+```nix
+# hosts/laptop.nix
+{
+  system = "aarch64-darwin";
+}
+```
+
+Switching to that configuration installs the man page:
+
+```bash
+sudo darwin-rebuild switch --flake .#laptop   # or nixos-rebuild, or home-manager switch
+man tessera
+```
+
+Leave it out with `features.manual.enable = false;`. To build only the man
+page, run `nix build github:minikN/tessera#docs.man`.
+
+In tessera, `nix flake check` fails when a feature has no `doc` block with a
+`summary` and a `description`, or when an option has no description.
+
 ## Adding things
 
 - **A new host** — drop a file in `hosts/`. Filename = host name.
@@ -323,7 +316,10 @@ GPLv3 — see [LICENSE](./LICENSE).
 tessera is heavily inspired / based on the idea of two other projects:
 - [Andrew Tropin's RDE](https://github.com/abcdw/rde). The original idea of
   composable features / modules that can be picked and combined to match
-  ones preferred environment. It's for Guix what tessera is for Nix.
+  ones preferred environment. It's for Guix what tessera is for Nix. Many
+  of tessera's features are inspired of RDE's (same options, similar
+  implementation). The amount of work that's been done on RDE is truly
+  impressive, and I'm thankful I can use it as inspiration for tessera.
 
 - [Migal Moreno's Ordenada](https://github.com/migalmoreno/ordenada) (private). 
   The original project that took RDE's idea to Nix. It's discontinued and
@@ -335,7 +331,7 @@ tessera is heavily inspired / based on the idea of two other projects:
 I was contributor to both [rde](https://github.com/abcdw/rde/commits/master/?author=minikN) and
 [ordenada](https://github.com/minikN/ordenada/commits/master/?author=minikN) before I ever came
 in touch with AI. But it's true: Nowadays, I simply don't have the time (family, job) anymore
-to allocate as much time to my projects as I'd like to and I use AI to make decent progress
+to allocate as much of it to my projects as I'd like to and I use AI to make decent progress
 in the time I have available. I am deliberate in my use of it. I use it in small chunks, one task
 at a time. I review its code and mostly run multiple iterations until I'm happy. I never commit
 something I don't fully understand.
