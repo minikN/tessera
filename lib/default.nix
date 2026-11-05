@@ -8,7 +8,7 @@ let
   discover = import ./discover.nix { inherit lib; };
   types = import ./types.nix { inherit lib; };
   setsOf = import ./sets.nix { inherit lib; };
-  evalDocs = import ./eval-docs.nix { inherit lib; };
+  evalOptions = import ./eval-options.nix { inherit lib; };
 
   helpers = {
     inherit mkFeature mkElispConfig;
@@ -30,7 +30,7 @@ let
     inherit
       lib
       inputs
-      evalDocs
+      evalOptions
       setsOf
       ;
   };
@@ -44,8 +44,6 @@ in
     mkFlake
     mkDocs
     types
-    setsOf
-    evalDocs
     features
     ;
   inherit (discover) discoverFeatures discoverHosts;

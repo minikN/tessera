@@ -1,7 +1,7 @@
 {
   lib,
   inputs,
-  evalDocs,
+  evalOptions,
   setsOf,
 }:
 
@@ -28,12 +28,12 @@ let
   ## all features twice, once as a Linux (NixOS) host and once as a macOS
   ## host.
   contexts = {
-    nixos = evalDocs {
+    nixos = evalOptions {
       pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
       inherit features;
       platform = "nixos";
     };
-    darwin = evalDocs {
+    darwin = evalOptions {
       pkgs = inputs.nixpkgs.legacyPackages.aarch64-darwin;
       inherit features;
       platform = "darwin";
