@@ -197,7 +197,8 @@ on by default are left alone.
 (`emacs`); Enabling a feature without its requirements is an error.
 
 **Documentation.** `nix build .#docs` turns the `doc` blocks and option
-descriptions into a website. In tessera, `nix flake check` fails when a
+descriptions into a website, `nix build .#docs.man` into the `tessera(5)`
+man page that the `manual` feature installs (`man tessera`). In tessera, `nix flake check` fails when a
 feature has no `doc` block with a `summary` and a `description`, or when an
 option has no description.
 
