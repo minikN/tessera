@@ -27,7 +27,6 @@
       systems = [
         "x86_64-linux"
         "aarch64-linux"
-        "x86_64-darwin"
         "aarch64-darwin"
       ];
       forAllSystems =
@@ -41,6 +40,19 @@
           inherit pkgs;
           inherit (lib) features;
         };
+      });
+
+      checks = forAllSystems (pkgs: {
+        docs = lib.checkDocs {
+          inherit pkgs;
+          inherit (lib) features;
+        };
+
+        formatting = pkgs.runCommandLocal "formatting-check" { nativeBuildInputs = [ pkgs.nixfmt ]; } ''
+          cd ${./.}
+          find . -name '*.nix' -exec nixfmt --check {} +
+          touch $out
+        '';
       });
 
       formatter = forAllSystems (pkgs: pkgs.nixfmt-tree);

@@ -34,6 +34,7 @@ let
       setsOf
       ;
   };
+  checkDocs = import ./check-docs.nix { inherit lib evalOptions; };
 in
 {
   inherit
@@ -43,6 +44,7 @@ in
     mkElispConfig
     mkFlake
     mkDocs
+    checkDocs
     types
     features
     ;
