@@ -117,7 +117,7 @@ features = { config, ... }: {
 List the available hardware profiles with:
 
 ```bash
-nix eval github:minikN/tessera#hardwareProfiles
+nix eval github:minikN/tessera#lib.hardwareProfiles
 ```
 
 ## Features
@@ -195,6 +195,11 @@ on by default are left alone.
 
 **Dependencies.** A nested feature (`emacs.keymaps`) requires its parent
 (`emacs`); Enabling a feature without its requirements is an error.
+
+**Documentation.** `nix build .#docs` turns the `doc` blocks and option
+descriptions into a website. In tessera, `nix flake check` fails when a
+feature has no `doc` block with a `summary` and a `description`, or when an
+option has no description.
 
 ### Cross-platform feature
 
