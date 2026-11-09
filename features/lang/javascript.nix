@@ -9,29 +9,38 @@ mkFeature {
   name = "javascript";
 
   doc = {
-    summary = "JavaScript and TypeScript editing, whatever the runtime";
+    summary = "JavaScript and TypeScript development environment";
     description = ''
-      Sets the editor up for JavaScript and TypeScript, currently Emacs
-      through the emacs feature. It installs no runtime, so Node.js, Bun or
-      Deno come from the project (e.g. its dev shell) or `home.packages`.
+      Sets the editor up for JavaScript and TypeScript. Doesn't install any
+      runtime or package manager globally.
 
-      - **Modes:** `.js`, `.jsx`, `.mjs` and `.cjs` files open in `js-ts-mode`,
+      - two spaces, in JavaScript like in TypeScript
+      - typescript-language-server (`languageServer.package`). It uses the
+        TypeScript of the project's `node_modules`, or its own if there is none.
+        In Deno projects, those with a `deno.json` or `deno.jsonc` in the file's
+        directory or above, it is `deno lsp` of `packages.deno.package` instead
+
+      ```nix
+      features.javascript = {
+        enable = true;
+        utils.enable = true;
+        packages.npm.package = pkgs.nodejs_22;
+      };
+      ```
+
+      ## With Emacs
+
+      - `.js`, `.jsx`, `.mjs` and `.cjs` files open in `js-ts-mode`,
         `.ts`, `.mts` and `.cts` in `typescript-ts-mode` and `.tsx` in
         `tsx-ts-mode`, the tree-sitter modes that ship with Emacs. The
         grammars come with this feature, so Emacs never asks to install them
-      - **Indentation:** two spaces, in JavaScript like in TypeScript
-      - **Language server:** typescript-language-server (`languageServer.package`),
-        started by Eglot when the emacs.eglot feature is enabled. It uses the
-        TypeScript of the project's `node_modules`, or its own if there is none.
-        It type-checks JavaScript too, so e.g. a missing import is an error
-        with a fix; in a project with a `jsconfig.json` or `tsconfig.json`,
-        that needs `"checkJs": true` there. In Deno projects, those with a
-        `deno.json` or `deno.jsonc` in the file's directory or above, it is
-        `deno lsp` of `packages.deno.package` instead, with Deno's linter
-      - **Without tree-sitter:** if `features.emacs.package` is built without
+      - Eglot starts the language server when the emacs.eglot feature is enabled
+      - if `features.emacs.package` is built without
         tree-sitter, JavaScript and TypeScript files open in `js-mode` (`.jsx`
         and `.tsx` in `js-jsx-mode`) and home-manager prints a warning. The
         language server then treats TypeScript as JavaScript
+
+      ## Utility package
 
       `utils.enable` adds tessera's javascript-utils package, with
       refactorings and commands for the package manager. With the keymaps
@@ -71,20 +80,8 @@ mkFeature {
       | `C-c c p u` | remove packages | `bun remove x` |
       | `C-c c p v` | visit `package.json` or `deno.json` | |
 
-      Commands run in a compilation buffer named after them, so several
-      can run at once. Each tool runs from the Nix store (`packages`),
-      never from `PATH`, so all five are in the closure. Scripts of npm and
-      pnpm get the same Node.js, scripts of bun run on bun. Tools, lockfiles
-      and commands can be changed with
+      Executables can be changed via the `packages` option. Tools, lockfiles and commands can be changed with
       `M-x customize-group tessera-javascript-utils`.
-
-      ```nix
-      features.javascript = {
-        enable = true;
-        utils.enable = true;
-        packages.npm.package = pkgs.nodejs_22;
-      };
-      ```
     '';
   };
 
