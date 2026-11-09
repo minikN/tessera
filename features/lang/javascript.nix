@@ -35,6 +35,15 @@ mkFeature {
         `tsx-ts-mode`, the tree-sitter modes that ship with Emacs. The
         grammars come with this feature, so Emacs never asks to install them
       - Eglot starts the language server when the emacs.eglot feature is enabled
+      - it supports the following runtimes: `node`, `deno` and `bun`
+      - it supports the following package managers: `npm`, `pnpm`, `yarn`,
+        `deno`, `bun`
+      - it supports the following formatters: `eslint`, `biome`, `oxfmt` and
+        `prettier`. `C-c c f` (emacs.eglot) first checks if the current project has
+        any of these set up by looking up their dominating files. If a formatter
+        is found, it'll use the locally installed (`node_modules/.bin`) version
+        or the `formatters` version. If no formatter was found, `eglot-format`
+        is executed, leaving formatting to the LSP
       - if `features.emacs.package` is built without
         tree-sitter, JavaScript and TypeScript files open in `js-mode` (`.jsx`
         and `.tsx` in `js-jsx-mode`) and home-manager prints a warning. The
@@ -95,7 +104,7 @@ mkFeature {
 
       packages = {
         npm.package = lib.mkPackageOption pkgs "nodejs" {
-          extraDescription = "Provides npm, and Node.js for the scripts of npm and pnpm.";
+          extraDescription = "Provides npm, and Node.js for the scripts of npm and pnpm and for the project's own formatters.";
         };
         pnpm.package = tool "pnpm";
         yarn.package = tool "yarn";
@@ -103,6 +112,13 @@ mkFeature {
         deno.package = lib.mkPackageOption pkgs "deno" {
           extraDescription = "Also the language server of Deno projects.";
         };
+      };
+
+      formatters = {
+        biome.package = tool "biome";
+        oxfmt.package = tool "oxfmt";
+        prettier.package = tool "prettier";
+        eslint.package = tool "eslint";
       };
 
       utils.enable = lib.mkEnableOption "javascript-utils, refactorings and package manager commands for Emacs";
@@ -205,6 +221,41 @@ mkFeature {
                   (eglot-ensure)))
               (add-hook 'js-base-mode-hook #'tessera-javascript--eglot-ensure)
               (add-hook 'typescript-ts-base-mode-hook #'tessera-javascript--eglot-ensure)
+
+              (defun tessera-javascript--formatter (command)
+                "Return COMMAND, with the project's own program if it has one.
+              That is the program of the same name in node_modules/.bin, run with
+              Node.js first in `PATH'."
+                (let ((bin (concat "node_modules/.bin/" (file-name-nondirectory (car command)))))
+                  (if-let* ((dir (locate-dominating-file default-directory bin)))
+                      `("${pkgs.coreutils}/bin/env"
+                        ,(concat "PATH=${cfg.packages.npm.package}/bin:" (getenv "PATH"))
+                        ,(file-local-name (expand-file-name bin dir))
+                        ,@(cdr command))
+                    command)))
+
+              (with-eval-after-load 'tessera-eglot
+                (pcase-dolist
+                    (`(,files ,command)
+                     '((("biome.json" "biome.jsonc" ".biome.json" ".biome.jsonc")
+                        ("${cfg.formatters.biome.package}/bin/biome" "format" "--write"))
+                       ((".oxfmtrc.json" ".oxfmtrc.jsonc" "oxfmt.config.ts")
+                        ("${cfg.formatters.oxfmt.package}/bin/oxfmt"))
+                       ((".prettierrc" ".prettierrc.json" ".prettierrc.json5" ".prettierrc.yaml"
+                         ".prettierrc.yml" ".prettierrc.toml" ".prettierrc.js" ".prettierrc.mjs"
+                         ".prettierrc.cjs" ".prettierrc.ts" ".prettierrc.mts" ".prettierrc.cts"
+                         "prettier.config.js" "prettier.config.mjs" "prettier.config.cjs"
+                         "prettier.config.ts" "prettier.config.mts" "prettier.config.cts")
+                        ("${cfg.formatters.prettier.package}/bin/prettier" "--write"))
+                       (("eslint.config.js" "eslint.config.mjs" "eslint.config.cjs"
+                         "eslint.config.ts" "eslint.config.mts" "eslint.config.cts"
+                         ".eslintrc.js" ".eslintrc.cjs" ".eslintrc.yaml" ".eslintrc.yml"
+                         ".eslintrc.json" ".eslintrc")
+                        ("${cfg.formatters.eslint.package}/bin/eslint" "--fix"))))
+                  (add-to-list 'tessera-eglot-formatters
+                               (list '(js-base-mode typescript-ts-base-mode) files
+                                     (lambda () (tessera-javascript--formatter command)))
+                               t)))
             ''}
           '';
         })
