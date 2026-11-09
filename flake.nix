@@ -35,12 +35,18 @@
     {
       inherit lib;
 
-      packages = forAllSystems (pkgs: {
-        docs = lib.mkDocs {
-          inherit pkgs;
-          inherit (lib) features;
-        };
-      });
+      overlays.default = lib.overlay;
+
+      packages = forAllSystems (
+        pkgs:
+        {
+          docs = lib.mkDocs {
+            inherit pkgs;
+            inherit (lib) features;
+          };
+        }
+        // (pkgs.extend lib.overlay).tessera
+      );
 
       checks = forAllSystems (pkgs: {
         docs = lib.checkDocs {
