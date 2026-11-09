@@ -1,4 +1,4 @@
-{ lib }:
+{ lib, overlay }:
 
 {
   inputs,
@@ -81,7 +81,10 @@ let
     globalsOptionsModule
     staticGlobalsModule
     hostFeaturesModule
-    { nixpkgs.config.allowUnfree = true; }
+    {
+      nixpkgs.config.allowUnfree = true;
+      nixpkgs.overlays = [ overlay ];
+    }
     systemHomeManagerModule
     featureChecks
   ]
@@ -123,6 +126,7 @@ let
     pkgs = import inputs.nixpkgs {
       inherit system;
       config.allowUnfree = true;
+      overlays = [ overlay ];
     };
     extraSpecialArgs = { inherit inputs globals; };
     modules = homeModules;
