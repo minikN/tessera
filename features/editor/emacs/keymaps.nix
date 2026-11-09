@@ -27,6 +27,7 @@ mkFeature {
       | Keys | Purpose | Provided by |
       |------|---------|-------------|
       | `C-c a` | applications | this feature (`keys.app`) |
+      | `C-c c` | code | this feature (`keys.code`), filled by emacs.eglot and language features |
       | `C-c t` | toggles | this feature (`keys.toggle`) |
       | `C-c w` | side windows | emacs.window-management |
       | `M-g` | go to (Emacs' `goto-map`) | Emacs, extended |
@@ -70,6 +71,13 @@ mkFeature {
       5. Every prefix has a label, shown by which-key
       6. Keys recommended upstream stay where they don't fit `C-c`, such as
          Embark's `C-.`
+      7. `C-c c` is the same for every language: commands that work in any
+         language (those of Eglot) sit directly in it, `C-c c u` holds the
+         language's own utilities such as refactorings, bound in its major
+         modes, and `C-c c p` the
+         commands for the packages of the project at hand, in any of its
+         buffers. A language feature adds a predicate recognising its
+         projects and their keymap to `tessera-code-package-maps`
 
       A feature with one entry point declares a `key` option and binds its
       command in the applications map:
@@ -105,6 +113,11 @@ mkFeature {
         type = types.str;
         default = "a";
         description = "Key under `C-c` for `tessera-app-map`";
+      };
+      code = mkOption {
+        type = types.str;
+        default = "c";
+        description = "Key under `C-c` for `tessera-code-map`";
       };
       toggle = mkOption {
         type = types.str;
@@ -146,12 +159,36 @@ mkFeature {
             "V" #'global-visual-line-mode
             "w" #'whitespace-mode
             "W" #'global-whitespace-mode)
+
+          (defvar tessera-code-package-maps nil
+            "Alist of (PREDICATE . KEYMAP) behind `p' in `tessera-code-map'.
+          PREDICATE is called without arguments in the current buffer; the
+          keymaps of all predicates returning non-nil are combined.")
+
+          (defun tessera-keymaps--package-map (_binding)
+            "Return the labelled package keymap for the current buffer, or nil."
+            (when-let* ((maps (seq-keep (pcase-lambda (`(,predicate . ,map))
+                                          (and (funcall predicate) map))
+                                        tessera-code-package-maps)))
+              (cons "Packages" (make-composed-keymap maps))))
+
+          (defvar-keymap tessera-code-map
+            :doc "Prefix keymap for working on code.
+          Eglot binds its commands here in the buffers it manages, language
+          features their utilities under `u' in their major modes, and `p'
+          leads to the package commands of the project at hand, see
+          `tessera-code-package-maps'."
+            "p" '(menu-item "Packages" nil :filter tessera-keymaps--package-map))
         '';
       })
 
       {
         programs.emacs.extraConfig = ''
           (keymap-set mode-specific-map "${cfg.keys.app}" (cons "Applications" tessera-app-map))
+          (keymap-set mode-specific-map "${cfg.keys.code}" (cons "Code" tessera-code-map))
+          ;; Hide keys whose filter finds nothing, e.g. `C-c c p' outside a package
+          (with-eval-after-load 'which-key
+            (add-to-list 'which-key-replacement-alist '((nil . "\\`nil\\'") . t)))
           (keymap-set mode-specific-map "${cfg.keys.toggle}" (cons "Toggles" tessera-toggle-map))
           (which-key-mode 1)
         '';
