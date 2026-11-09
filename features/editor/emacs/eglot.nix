@@ -26,6 +26,9 @@ mkFeature {
       - The echo area shows an eldoc hint and a quick action hint.
         Pressing `M-n` shows the hints if they are hidden and cycles
         between them if there are multiple
+      - Formatting uses the formatter that matched in `tessera-eglot-formatters`
+        or `eglot-format` as a fallback. Language features may add formatters
+        to `tessera-eglot-formatters`
 
       Eglot works through Emacs' own facilities, so their keys keep working.
       With the keymaps feature, Eglot's own commands live directly under
@@ -42,7 +45,7 @@ mkFeature {
       | `M-n` | next documentation in the echo area |
       | `M-g f` | diagnostics (with the completion feature) |
       | `C-c c a` | code actions |
-      | `C-c c f` | format the region or buffer |
+      | `C-c c f` | format the file with the project's formatter or `eglot-format` |
       | `C-c c i`, `C-c c t` | go to implementation, type definition |
       | `C-c c o` | organize imports |
       | `C-c c q` | quick fix |
@@ -149,10 +152,53 @@ mkFeature {
           (with-eval-after-load 'eglot
             (keymap-set eglot-mode-map "M-n" #'tessera-eglot-next-doc))
 
+          (defvar tessera-eglot-formatters nil
+            "Formatters of projects, which `tessera-eglot-format' prefers to Eglot.
+          Each element is (MODES FILES COMMAND), added by language features.  It
+          applies in buffers whose major mode derives from one of MODES, when one
+          of FILES, e.g. the formatter's configuration, is in the buffer's
+          directory or above.  COMMAND is a list of a program and its arguments,
+          which formats the file given after them in place, or a function
+          returning one, called in the buffer.")
+
+          (defun tessera-eglot-formatter ()
+            "Return the command formatting the file of the current buffer, or nil.
+          It is the command of the first of `tessera-eglot-formatters' that
+          applies, followed by the file."
+            (when buffer-file-name
+              (seq-some (pcase-lambda (`(,modes ,files ,command))
+                          (and (derived-mode-p modes)
+                               (seq-some (lambda (file) (locate-dominating-file default-directory file))
+                                         files)
+                               (append (if (functionp command) (funcall command) command)
+                                       (list (file-local-name buffer-file-name)))))
+                        tessera-eglot-formatters)))
+
+          (defun tessera-eglot-format ()
+            "Format with the project's formatter, or with Eglot if there is none.
+          The project's formatter, see `tessera-eglot-formatter', formats the
+          whole file after saving the buffer, and shows its output when it
+          fails.  `eglot-format' formats the region or the buffer."
+            (interactive)
+            (if-let* ((command (tessera-eglot-formatter)))
+                (let ((output (get-buffer-create "*Format*")))
+                  (save-buffer)
+                  (with-current-buffer output
+                    (erase-buffer))
+                  (let ((status (apply #'process-file (car command) nil output nil (cdr command))))
+                    (unless (verify-visited-file-modtime)
+                      (revert-buffer-with-fine-grain t t))
+                    (unless (eql status 0)
+                      (with-current-buffer output
+                        (ansi-color-apply-on-region (point-min) (point-max)))
+                      (display-buffer output)
+                      (message "Formatter exited with %s" status))))
+              (call-interactively #'eglot-format)))
+
           (defvar-keymap tessera-eglot-map
             :doc "Keymap of Eglot commands for the buffers it manages."
             "a" #'eglot-code-actions
-            "f" #'eglot-format
+            "f" #'tessera-eglot-format
             "i" #'eglot-find-implementation
             "o" #'eglot-code-action-organize-imports
             "q" #'eglot-code-action-quickfix
