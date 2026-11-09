@@ -2,9 +2,10 @@
 
 let
   mkFeature = import ./mk-feature.nix { inherit lib; };
-  mkHost = import ./mk-host.nix { inherit lib; };
+  mkHost = import ./mk-host.nix { inherit lib overlay; };
   mkSchemeAttrs = import ./mk-scheme-attrs.nix { inherit lib; };
-  mkElispConfig = import ./mk-elisp-config.nix { inherit lib; };
+  mkElispPackage = import ./mk-elisp-package.nix { inherit lib; };
+  mkElispConfig = import ./mk-elisp-config.nix { inherit lib mkElispPackage; };
   discover = import ./discover.nix { inherit lib; };
   types = import ./types.nix { inherit lib; };
   setsOf = import ./sets.nix { inherit lib; };
@@ -15,6 +16,14 @@ let
     tessera = { inherit types mkDocs features; };
   };
   features = discover.discoverFeatures ../features helpers;
+
+  ## Tessera's own packages, from `packages/`, as `pkgs.tessera.<name>`
+  overlay = final: _prev: {
+    tessera = lib.packagesFromDirectoryRecursive {
+      callPackage = lib.callPackageWith (final // { inherit mkElispPackage; });
+      directory = ../packages;
+    };
+  };
 
   mkFlake = import ./mk-flake.nix {
     inherit
@@ -41,12 +50,14 @@ in
     mkFeature
     mkHost
     mkSchemeAttrs
+    mkElispPackage
     mkElispConfig
     mkFlake
     mkDocs
     checkDocs
     types
     features
+    overlay
     ;
   inherit (discover) discoverFeatures discoverHosts;
   hardwareProfiles = builtins.attrNames inputs.nixos-hardware.nixosModules;
