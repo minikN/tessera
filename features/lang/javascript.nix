@@ -39,12 +39,14 @@ mkFeature {
       - it supports the following runtimes: `node`, `deno` and `bun`
       - it supports the following package managers: `npm`, `pnpm`, `yarn`,
         `deno`, `bun`
-      - it supports the following formatters: `eslint`, `biome`, `oxfmt` and
-        `prettier`. `C-c c f` (emacs.eglot) first checks if the current project has
-        any of these set up by looking up their dominating files. If a formatter
-        is found, it'll use the locally installed (`node_modules/.bin`) version
-        or the `formatters` version. If no formatter was found, `eglot-format`
-        is executed, leaving formatting to the LSP
+      - it supports the following formatters: `eslint`, `biome` and `oxfmt`. If the
+        project sets one up, found by its configuration file in the file's
+        directory or above, its language server runs next to typescript-language-server
+        through rassumfrassum
+      - `eglot-format` will use the formatter's LSP to format the document if one is
+         defined. If not, it's routed through tsls as a fallback
+      - if formatter is set, it'll use the local version (`node_modules/.bin`) if
+        available, otherwise it'll use `packages.formatters.<name>.package`
       - if `features.emacs.package` is built without
         tree-sitter, JavaScript and TypeScript files open in `js-mode` (`.jsx`
         and `.tsx` in `js-jsx-mode`) and home-manager prints a warning. The
@@ -103,8 +105,15 @@ mkFeature {
     {
       packages = {
         languageServer.package = tool "typescript-language-server";
+        formatters = {
+          eslint.package = lib.mkPackageOption pkgs "vscode-langservers-extracted" {
+            extraDescription = "Provides ESLint's language server.";
+          };
+          biome.package = tool "biome";
+          oxfmt.package = tool "oxfmt";
+        };
         npm.package = lib.mkPackageOption pkgs "nodejs" {
-          extraDescription = "Provides npm, and Node.js for the scripts of npm and pnpm and for the project's own formatters.";
+          extraDescription = "Provides npm, and Node.js for the scripts of npm and pnpm and for the project's own Biome and oxfmt.";
         };
         pnpm.package = tool "pnpm";
         yarn.package = tool "yarn";
@@ -112,13 +121,6 @@ mkFeature {
         deno.package = lib.mkPackageOption pkgs "deno" {
           extraDescription = "Also the language server of Deno projects.";
         };
-      };
-
-      formatters = {
-        biome.package = tool "biome";
-        oxfmt.package = tool "oxfmt";
-        prettier.package = tool "prettier";
-        eslint.package = tool "eslint";
       };
 
       utils.enable = lib.mkEnableOption "javascript-utils, refactorings and package manager commands for Emacs";
@@ -136,6 +138,65 @@ mkFeature {
       inherit (config.features) emacs;
       inherit (emacs.keymaps) keys;
       treesit = emacs.package.withTreeSitter or false;
+      rassPreset = pkgs.writeText "tessera-javascript.py" ''
+        """Tessera's JavaScript preset for rassumfrassum.
+
+        The servers come from the command line: typescript-language-server
+        first, then those of the project's tools in the order they format.
+        """
+
+        from rassumfrassum.frassum import DirectResponse
+        from rassumfrassum.presets.tslint import TypeScriptLogic
+
+        CAPABILITIES = {
+            "textDocument/formatting": "documentFormattingProvider",
+            "textDocument/rangeFormatting": "documentRangeFormattingProvider",
+            "textDocument/codeAction": "codeActionProvider",
+        }
+
+
+        class Logic(TypeScriptLogic):
+            async def on_server_request(self, method, params, source):
+                # Servers like Biome and ESLint register capabilities after
+                # starting. Record those rass routes by, which it only takes from
+                # initialize, and answer all but the file watchers Eglot supports
+                if method in ("client/registerCapability", "client/unregisterCapability"):
+                    key = "registrations" if method.startswith("client/register") else "unregisterations"
+                    rest = []
+                    for registration in params.get(key, []):
+                        if registration.get("method") == "workspace/didChangeWatchedFiles":
+                            rest.append(registration)
+                        elif capability := CAPABILITIES.get(registration.get("method")):
+                            if key == "registrations":
+                                source.caps[capability] = registration.get("registerOptions") or True
+                            else:
+                                source.caps.pop(capability, None)
+                    if not rest:
+                        return DirectResponse(payload=None)
+                    params[key] = rest
+                return await super().on_server_request(method, params, source)
+
+            async def on_client_request(self, method, params, servers):
+                # The first tool that formats, else typescript-language-server
+                if capability := {
+                    "textDocument/formatting": "documentFormattingProvider",
+                    "textDocument/rangeFormatting": "documentRangeFormattingProvider",
+                }.get(method):
+                    return [s for s in servers[1:] + servers[:1] if s.caps.get(capability)][:1]
+                return await super().on_client_request(method, params, servers)
+
+            async def on_client_response(self, method, request_params, response_payload, is_error, server):
+                await super().on_client_response(method, request_params, response_payload, is_error, server)
+                # Let ESLint format the projects that don't have a formatter
+                if method == "workspace/configuration" and not is_error and "eslint" in server.name.lower():
+                    for item in response_payload:
+                        if isinstance(item, dict) and "validate" in item:
+                            item["format"] = True
+
+
+        def logic_class():
+            return Logic
+      '';
     in
     lib.mkIf emacs.enable (
       lib.mkMerge [
@@ -195,12 +256,48 @@ mkFeature {
             }
             (setopt js-indent-level 2)
 
+            (defun tessera-javascript--project-command (command)
+              "Return COMMAND, with the project's own program if it has one.
+            That is the program of the same name in node_modules/.bin, run with
+            Node.js first in `PATH'."
+              (let ((bin (concat "node_modules/.bin/" (file-name-nondirectory (car command)))))
+                (if-let* ((dir (locate-dominating-file default-directory bin)))
+                    `("${pkgs.coreutils}/bin/env"
+                      ,(concat "PATH=${cfg.packages.npm.package}/bin:" (getenv "PATH"))
+                      ,(file-local-name (expand-file-name bin dir))
+                      ,@(cdr command))
+                  command)))
+
+            (defconst tessera-javascript--tool-servers
+              '((("biome.json" "biome.jsonc" ".biome.json" ".biome.jsonc")
+                 "${cfg.packages.formatters.biome.package}/bin/biome" "lsp-proxy")
+                ((".oxfmtrc.json" ".oxfmtrc.jsonc" "oxfmt.config.ts")
+                 "${cfg.packages.formatters.oxfmt.package}/bin/oxfmt" "--lsp")
+                (("eslint.config.js" "eslint.config.mjs" "eslint.config.cjs"
+                  "eslint.config.ts" "eslint.config.mts" "eslint.config.cts"
+                  ".eslintrc.js" ".eslintrc.cjs" ".eslintrc.yaml" ".eslintrc.yml"
+                  ".eslintrc.json" ".eslintrc")
+                 "${cfg.packages.formatters.eslint.package}/bin/vscode-eslint-language-server" "--stdio"))
+              "Language servers of the tools, after their configuration files.
+            In the order they format.")
+
             (defun tessera-javascript--language-server (&rest _)
-              "Return the language server for the current buffer, Deno's in Deno projects."
+              "Return the language servers for the current buffer.
+            Deno projects get Deno's, others typescript-language-server, with the
+            servers of the tools the project sets up through rassumfrassum."
               (if (or (locate-dominating-file default-directory "deno.json")
                       (locate-dominating-file default-directory "deno.jsonc"))
                   '("${cfg.packages.deno.package}/bin/deno" "lsp")
-                '("${cfg.packages.languageServer.package}/bin/typescript-language-server" "--stdio")))
+                (let ((server '("${cfg.packages.languageServer.package}/bin/typescript-language-server" "--stdio"))
+                      (tools (seq-keep (pcase-lambda (`(,files . ,command))
+                                         (and (seq-some (lambda (file) (locate-dominating-file default-directory file))
+                                                        files)
+                                              (tessera-javascript--project-command command)))
+                                       tessera-javascript--tool-servers)))
+                  (if tools
+                      `("${pkgs.rassumfrassum}/bin/rass" "--log-level" "warn" "${rassPreset}"
+                        "--" ,@server ,@(seq-mapcat (lambda (tool) (cons "--" tool)) tools))
+                    server))))
 
             (with-eval-after-load 'eglot
               (add-to-list 'eglot-server-programs
@@ -221,41 +318,6 @@ mkFeature {
                   (eglot-ensure)))
               (add-hook 'js-base-mode-hook #'tessera-javascript--eglot-ensure)
               (add-hook 'typescript-ts-base-mode-hook #'tessera-javascript--eglot-ensure)
-
-              (defun tessera-javascript--formatter (command)
-                "Return COMMAND, with the project's own program if it has one.
-              That is the program of the same name in node_modules/.bin, run with
-              Node.js first in `PATH'."
-                (let ((bin (concat "node_modules/.bin/" (file-name-nondirectory (car command)))))
-                  (if-let* ((dir (locate-dominating-file default-directory bin)))
-                      `("${pkgs.coreutils}/bin/env"
-                        ,(concat "PATH=${cfg.packages.npm.package}/bin:" (getenv "PATH"))
-                        ,(file-local-name (expand-file-name bin dir))
-                        ,@(cdr command))
-                    command)))
-
-              (with-eval-after-load 'tessera-eglot
-                (pcase-dolist
-                    (`(,files ,command)
-                     '((("biome.json" "biome.jsonc" ".biome.json" ".biome.jsonc")
-                        ("${cfg.formatters.biome.package}/bin/biome" "format" "--write"))
-                       ((".oxfmtrc.json" ".oxfmtrc.jsonc" "oxfmt.config.ts")
-                        ("${cfg.formatters.oxfmt.package}/bin/oxfmt"))
-                       ((".prettierrc" ".prettierrc.json" ".prettierrc.json5" ".prettierrc.yaml"
-                         ".prettierrc.yml" ".prettierrc.toml" ".prettierrc.js" ".prettierrc.mjs"
-                         ".prettierrc.cjs" ".prettierrc.ts" ".prettierrc.mts" ".prettierrc.cts"
-                         "prettier.config.js" "prettier.config.mjs" "prettier.config.cjs"
-                         "prettier.config.ts" "prettier.config.mts" "prettier.config.cts")
-                        ("${cfg.formatters.prettier.package}/bin/prettier" "--write"))
-                       (("eslint.config.js" "eslint.config.mjs" "eslint.config.cjs"
-                         "eslint.config.ts" "eslint.config.mts" "eslint.config.cts"
-                         ".eslintrc.js" ".eslintrc.cjs" ".eslintrc.yaml" ".eslintrc.yml"
-                         ".eslintrc.json" ".eslintrc")
-                        ("${cfg.formatters.eslint.package}/bin/eslint" "--fix"))))
-                  (add-to-list 'tessera-eglot-formatters
-                               (list '(js-base-mode typescript-ts-base-mode) files
-                                     (lambda () (tessera-javascript--formatter command)))
-                               t)))
             ''}
           '';
         })
