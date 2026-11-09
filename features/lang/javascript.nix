@@ -15,10 +15,11 @@ mkFeature {
       runtime or package manager globally.
 
       - two spaces, in JavaScript like in TypeScript
-      - typescript-language-server (`languageServer.package`). It uses the
-        TypeScript of the project's `node_modules`, or its own if there is none.
-        In Deno projects, those with a `deno.json` or `deno.jsonc` in the file's
-        directory or above, it is `deno lsp` of `packages.deno.package` instead
+      - typescript-language-server (`packages.languageServer.package`). It
+        uses the TypeScript of the project's `node_modules`, or its own if
+        there is none. In Deno projects, those with a `deno.json` or
+        `deno.jsonc` in the file's directory or above, it is `deno lsp` of
+        `packages.deno.package` instead
 
       ```nix
       features.javascript = {
@@ -100,9 +101,8 @@ mkFeature {
       tool = package: lib.mkPackageOption pkgs package { };
     in
     {
-      languageServer.package = lib.mkPackageOption pkgs "typescript-language-server" { };
-
       packages = {
+        languageServer.package = tool "typescript-language-server";
         npm.package = lib.mkPackageOption pkgs "nodejs" {
           extraDescription = "Provides npm, and Node.js for the scripts of npm and pnpm and for the project's own formatters.";
         };
@@ -200,7 +200,7 @@ mkFeature {
               (if (or (locate-dominating-file default-directory "deno.json")
                       (locate-dominating-file default-directory "deno.jsonc"))
                   '("${cfg.packages.deno.package}/bin/deno" "lsp")
-                '("${cfg.languageServer.package}/bin/typescript-language-server" "--stdio")))
+                '("${cfg.packages.languageServer.package}/bin/typescript-language-server" "--stdio")))
 
             (with-eval-after-load 'eglot
               (add-to-list 'eglot-server-programs
