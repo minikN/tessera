@@ -25,7 +25,9 @@ mkFeature {
         TypeScript of the project's `node_modules`, or its own if there is none.
         It type-checks JavaScript too, so e.g. a missing import is an error
         with a fix; in a project with a `jsconfig.json` or `tsconfig.json`,
-        that needs `"checkJs": true` there
+        that needs `"checkJs": true` there. In Deno projects, those with a
+        `deno.json` or `deno.jsonc` in the file's directory or above, it is
+        `deno lsp` of `packages.deno.package` instead, with Deno's linter
       - **Without tree-sitter:** if `features.emacs.package` is built without
         tree-sitter, JavaScript and TypeScript files open in `js-mode` (`.jsx`
         and `.tsx` in `js-jsx-mode`) and home-manager prints a warning. The
@@ -70,7 +72,7 @@ mkFeature {
       | `C-c c p v` | visit `package.json` or `deno.json` | |
 
       Commands run in a compilation buffer named after them, so several
-      can run at once. Each tool runs from the Nix store (`utils.packages`),
+      can run at once. Each tool runs from the Nix store (`packages`),
       never from `PATH`, so all five are in the closure. Scripts of npm and
       pnpm get the same Node.js, scripts of bun run on bun. Tools, lockfiles
       and commands can be changed with
@@ -80,7 +82,7 @@ mkFeature {
       features.javascript = {
         enable = true;
         utils.enable = true;
-        utils.packages.npm.package = pkgs.nodejs_22;
+        packages.npm.package = pkgs.nodejs_22;
       };
       ```
     '';
@@ -94,18 +96,19 @@ mkFeature {
     {
       languageServer.package = lib.mkPackageOption pkgs "typescript-language-server" { };
 
-      utils = {
-        enable = lib.mkEnableOption "javascript-utils, refactorings and package manager commands for Emacs";
-        packages = {
-          npm.package = lib.mkPackageOption pkgs "nodejs" {
-            extraDescription = "Provides npm, and Node.js for the scripts of npm and pnpm.";
-          };
-          pnpm.package = tool "pnpm";
-          yarn.package = tool "yarn";
-          bun.package = tool "bun";
-          deno.package = tool "deno";
+      packages = {
+        npm.package = lib.mkPackageOption pkgs "nodejs" {
+          extraDescription = "Provides npm, and Node.js for the scripts of npm and pnpm.";
+        };
+        pnpm.package = tool "pnpm";
+        yarn.package = tool "yarn";
+        bun.package = tool "bun";
+        deno.package = lib.mkPackageOption pkgs "deno" {
+          extraDescription = "Also the language server of Deno projects.";
         };
       };
+
+      utils.enable = lib.mkEnableOption "javascript-utils, refactorings and package manager commands for Emacs";
     };
 
   home =
@@ -129,6 +132,11 @@ mkFeature {
               "features.javascript: features.emacs.package is built without tree-sitter; JavaScript and TypeScript files use js-mode.";
         }
 
+        # TODO: Bun projects: format with `bun fmt` (C-c c f) and lint with
+        # `bun lint` (a Flymake backend), like Deno projects get `deno lsp`.
+        # `bun fmt` is in Bun 1.4.4; `bun lint` is canary-only there and lands
+        # in release builds after oven-sh/bun#46439. Wait until nixpkgs' bun
+        # has both (it is 1.4.2 as of 2026-11-09).
         (mkElispConfig pkgs {
           name = "tessera-javascript";
           summary = "JavaScript and TypeScript";
@@ -137,11 +145,11 @@ mkFeature {
             lib.optional cfg.utils.enable (
               pkgs.tessera.javascript-utils.override {
                 emacsPackages = epkgs;
-                nodejs = cfg.utils.packages.npm.package;
-                pnpm = cfg.utils.packages.pnpm.package;
-                yarn = cfg.utils.packages.yarn.package;
-                bun = cfg.utils.packages.bun.package;
-                deno = cfg.utils.packages.deno.package;
+                nodejs = cfg.packages.npm.package;
+                pnpm = cfg.packages.pnpm.package;
+                yarn = cfg.packages.yarn.package;
+                bun = cfg.packages.bun.package;
+                deno = cfg.packages.deno.package;
               }
             )
             ++ lib.optional treesit (
@@ -174,13 +182,20 @@ mkFeature {
             }
             (setopt js-indent-level 2)
 
+            (defun tessera-javascript--language-server (&rest _)
+              "Return the language server for the current buffer, Deno's in Deno projects."
+              (if (or (locate-dominating-file default-directory "deno.json")
+                      (locate-dominating-file default-directory "deno.jsonc"))
+                  '("${cfg.packages.deno.package}/bin/deno" "lsp")
+                '("${cfg.languageServer.package}/bin/typescript-language-server" "--stdio")))
+
             (with-eval-after-load 'eglot
               (add-to-list 'eglot-server-programs
                            '(((js-mode :language-id "javascript")
                               (js-ts-mode :language-id "javascript")
                               (tsx-ts-mode :language-id "typescriptreact")
                               (typescript-ts-mode :language-id "typescript"))
-                             . ("${cfg.languageServer.package}/bin/typescript-language-server" "--stdio")))
+                             . tessera-javascript--language-server))
               ;; Type-check JavaScript outside projects with a jsconfig.json or tsconfig.json
               (setq-default eglot-workspace-configuration
                             (plist-put (default-value 'eglot-workspace-configuration)
