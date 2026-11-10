@@ -15,7 +15,7 @@ mkFeature {
       runtime or package manager globally.
 
       - two spaces, in JavaScript like in TypeScript
-      - typescript-language-server (`packages.languageServer.package`). It
+      - typescript-language-server (`packages.tsls.package`). It
         uses the TypeScript of the project's `node_modules`, or its own if
         there is none. In Deno projects, those with a `deno.json` or
         `deno.jsonc` in the file's directory or above, it is `deno lsp` of
@@ -104,7 +104,7 @@ mkFeature {
     in
     {
       packages = {
-        languageServer.package = tool "typescript-language-server";
+        tsls.package = tool "typescript-language-server";
         formatters = {
           eslint.package = lib.mkPackageOption pkgs "vscode-langservers-extracted" {
             extraDescription = "Provides ESLint's language server.";
@@ -256,7 +256,7 @@ mkFeature {
                  (cons (if (or (locate-dominating-file default-directory "deno.json")
                                (locate-dominating-file default-directory "deno.jsonc"))
                            '("${cfg.packages.deno.package}/bin/deno" "lsp")
-                         '("${cfg.packages.languageServer.package}/bin/typescript-language-server" "--stdio"))
+                         '("${cfg.packages.tsls.package}/bin/typescript-language-server" "--stdio"))
                        (seq-keep (pcase-lambda (`(,files . ,command))
                                    (and (seq-some (lambda (file) (locate-dominating-file default-directory file))
                                                   files)
