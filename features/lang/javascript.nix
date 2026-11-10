@@ -145,46 +145,11 @@ mkFeature {
         first, then those of the project's tools in the order they format.
         """
 
-        from rassumfrassum.frassum import DirectResponse
+        from rassumfrassum.presets.tessera import Logic as TesseraLogic
         from rassumfrassum.presets.tslint import TypeScriptLogic
 
-        CAPABILITIES = {
-            "textDocument/formatting": "documentFormattingProvider",
-            "textDocument/rangeFormatting": "documentRangeFormattingProvider",
-            "textDocument/codeAction": "codeActionProvider",
-        }
 
-
-        class Logic(TypeScriptLogic):
-            async def on_server_request(self, method, params, source):
-                # Servers like Biome and ESLint register capabilities after
-                # starting. Record those rass routes by, which it only takes from
-                # initialize, and answer all but the file watchers Eglot supports
-                if method in ("client/registerCapability", "client/unregisterCapability"):
-                    key = "registrations" if method.startswith("client/register") else "unregisterations"
-                    rest = []
-                    for registration in params.get(key, []):
-                        if registration.get("method") == "workspace/didChangeWatchedFiles":
-                            rest.append(registration)
-                        elif capability := CAPABILITIES.get(registration.get("method")):
-                            if key == "registrations":
-                                source.caps[capability] = registration.get("registerOptions") or True
-                            else:
-                                source.caps.pop(capability, None)
-                    if not rest:
-                        return DirectResponse(payload=None)
-                    params[key] = rest
-                return await super().on_server_request(method, params, source)
-
-            async def on_client_request(self, method, params, servers):
-                # The first tool that formats, else typescript-language-server
-                if capability := {
-                    "textDocument/formatting": "documentFormattingProvider",
-                    "textDocument/rangeFormatting": "documentRangeFormattingProvider",
-                }.get(method):
-                    return [s for s in servers[1:] + servers[:1] if s.caps.get(capability)][:1]
-                return await super().on_client_request(method, params, servers)
-
+        class Logic(TesseraLogic, TypeScriptLogic):
             async def on_client_response(self, method, request_params, response_payload, is_error, server):
                 await super().on_client_response(method, request_params, response_payload, is_error, server)
                 # Let ESLint format the projects that don't have a formatter
@@ -255,62 +220,60 @@ mkFeature {
                 ''
             }
             (setopt js-indent-level 2)
-
-            (defun tessera-javascript--project-command (command)
-              "Return COMMAND, with the project's own program if it has one.
-            That is the program of the same name in node_modules/.bin, run with
-            Node.js first in `PATH'."
-              (let ((bin (concat "node_modules/.bin/" (file-name-nondirectory (car command)))))
-                (if-let* ((dir (locate-dominating-file default-directory bin)))
-                    `("${pkgs.coreutils}/bin/env"
-                      ,(concat "PATH=${cfg.packages.npm.package}/bin:" (getenv "PATH"))
-                      ,(file-local-name (expand-file-name bin dir))
-                      ,@(cdr command))
-                  command)))
-
-            (defconst tessera-javascript--tool-servers
-              '((("biome.json" "biome.jsonc" ".biome.json" ".biome.jsonc")
-                 "${cfg.packages.formatters.biome.package}/bin/biome" "lsp-proxy")
-                ((".oxfmtrc.json" ".oxfmtrc.jsonc" "oxfmt.config.ts")
-                 "${cfg.packages.formatters.oxfmt.package}/bin/oxfmt" "--lsp")
-                (("eslint.config.js" "eslint.config.mjs" "eslint.config.cjs"
-                  "eslint.config.ts" "eslint.config.mts" "eslint.config.cts"
-                  ".eslintrc.js" ".eslintrc.cjs" ".eslintrc.yaml" ".eslintrc.yml"
-                  ".eslintrc.json" ".eslintrc")
-                 "${cfg.packages.formatters.eslint.package}/bin/vscode-eslint-language-server" "--stdio"))
-              "Language servers of the tools, after their configuration files.
-            In the order they format.")
-
-            (defun tessera-javascript--language-server (&rest _)
-              "Return the language servers for the current buffer.
-            Deno projects get Deno's, others typescript-language-server, with the
-            servers of the tools the project sets up through rassumfrassum."
-              (if (or (locate-dominating-file default-directory "deno.json")
-                      (locate-dominating-file default-directory "deno.jsonc"))
-                  '("${cfg.packages.deno.package}/bin/deno" "lsp")
-                (let ((server '("${cfg.packages.languageServer.package}/bin/typescript-language-server" "--stdio"))
-                      (tools (seq-keep (pcase-lambda (`(,files . ,command))
-                                         (and (seq-some (lambda (file) (locate-dominating-file default-directory file))
-                                                        files)
-                                              (tessera-javascript--project-command command)))
-                                       tessera-javascript--tool-servers)))
-                  (if tools
-                      `("${pkgs.rassumfrassum}/bin/rass" "--log-level" "warn" "${rassPreset}"
-                        "--" ,@server ,@(seq-mapcat (lambda (tool) (cons "--" tool)) tools))
-                    server))))
-
-            (with-eval-after-load 'eglot
-              (add-to-list 'eglot-server-programs
-                           '(((js-mode :language-id "javascript")
-                              (js-ts-mode :language-id "javascript")
-                              (tsx-ts-mode :language-id "typescriptreact")
-                              (typescript-ts-mode :language-id "typescript"))
-                             . tessera-javascript--language-server))
-              ;; Type-check JavaScript outside projects with a jsconfig.json or tsconfig.json
-              (setq-default eglot-workspace-configuration
-                            (plist-put (default-value 'eglot-workspace-configuration)
-                                       :implicitProjectConfiguration '(:checkJs t))))
             ${lib.optionalString config.features.emacs.eglot.enable ''
+
+              (defun tessera-javascript--project-command (command)
+                "Return COMMAND, with the project's own program if it has one.
+              That is the program of the same name in node_modules/.bin, run with
+              Node.js first in `PATH'."
+                (let ((bin (concat "node_modules/.bin/" (file-name-nondirectory (car command)))))
+                  (if-let* ((dir (locate-dominating-file default-directory bin)))
+                      `("${pkgs.coreutils}/bin/env"
+                        ,(concat "PATH=${cfg.packages.npm.package}/bin:" (getenv "PATH"))
+                        ,(file-local-name (expand-file-name bin dir))
+                        ,@(cdr command))
+                    command)))
+
+              (defconst tessera-javascript--tool-servers
+                '((("biome.json" "biome.jsonc" ".biome.json" ".biome.jsonc")
+                   "${cfg.packages.formatters.biome.package}/bin/biome" "lsp-proxy")
+                  ((".oxfmtrc.json" ".oxfmtrc.jsonc" "oxfmt.config.ts")
+                   "${cfg.packages.formatters.oxfmt.package}/bin/oxfmt" "--lsp")
+                  (("eslint.config.js" "eslint.config.mjs" "eslint.config.cjs"
+                    "eslint.config.ts" "eslint.config.mts" "eslint.config.cts"
+                    ".eslintrc.js" ".eslintrc.cjs" ".eslintrc.yaml" ".eslintrc.yml"
+                    ".eslintrc.json" ".eslintrc")
+                   "${cfg.packages.formatters.eslint.package}/bin/vscode-eslint-language-server" "--stdio"))
+                "Language servers of the tools, after their configuration files.
+              In the order they format.")
+
+              (defun tessera-javascript--language-server (&rest _)
+                "Return the language servers for the current buffer.
+              Deno projects get Deno's, others typescript-language-server, with the
+              servers of the tools the project sets up, see `tessera-eglot-contact'."
+                (if (or (locate-dominating-file default-directory "deno.json")
+                        (locate-dominating-file default-directory "deno.jsonc"))
+                    '("${cfg.packages.deno.package}/bin/deno" "lsp")
+                  (tessera-eglot-contact
+                   (cons '("${cfg.packages.languageServer.package}/bin/typescript-language-server" "--stdio")
+                         (seq-keep (pcase-lambda (`(,files . ,command))
+                                     (and (seq-some (lambda (file) (locate-dominating-file default-directory file))
+                                                    files)
+                                          (tessera-javascript--project-command command)))
+                                   tessera-javascript--tool-servers))
+                   "${rassPreset}")))
+
+              (with-eval-after-load 'eglot
+                (add-to-list 'eglot-server-programs
+                             '(((js-mode :language-id "javascript")
+                                (js-ts-mode :language-id "javascript")
+                                (tsx-ts-mode :language-id "typescriptreact")
+                                (typescript-ts-mode :language-id "typescript"))
+                               . tessera-javascript--language-server))
+                ;; Type-check JavaScript outside projects with a jsconfig.json or tsconfig.json
+                (setq-default eglot-workspace-configuration
+                              (plist-put (default-value 'eglot-workspace-configuration)
+                                         :implicitProjectConfiguration '(:checkJs t))))
 
               (defun tessera-javascript--eglot-ensure ()
                 "Start Eglot, except in JSON buffers."
