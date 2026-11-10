@@ -42,9 +42,9 @@ mkFeature {
       - it supports the following formatters: `eslint`, `biome` and `oxfmt`. If the
         project sets one up, found by its configuration file in the file's
         directory or above, its language server runs next to typescript-language-server
-        through rassumfrassum
+        (or `deno lsp`) through rassumfrassum
       - `eglot-format` will use the formatter's LSP to format the document if one is
-         defined. If not, it's routed through tsls as a fallback
+         defined. If not, it's routed through tsls (or `deno lsp`) as a fallback
       - if formatter is set, it'll use the local version (`node_modules/.bin`) if
         available, otherwise it'll use `packages.formatters.<name>.package`
       - if `features.emacs.package` is built without
@@ -141,8 +141,9 @@ mkFeature {
       rassPreset = pkgs.writeText "tessera-javascript.py" ''
         """Tessera's JavaScript preset for rassumfrassum.
 
-        The servers come from the command line: typescript-language-server
-        first, then those of the project's tools in the order they format.
+        The servers come from the command line: Deno's or
+        typescript-language-server first, then those of the project's tools in
+        the order they format.
         """
 
         from rassumfrassum.presets.tessera import Logic as TesseraLogic
@@ -251,17 +252,17 @@ mkFeature {
                 "Return the language servers for the current buffer.
               Deno projects get Deno's, others typescript-language-server, with the
               servers of the tools the project sets up, see `tessera-eglot-contact'."
-                (if (or (locate-dominating-file default-directory "deno.json")
-                        (locate-dominating-file default-directory "deno.jsonc"))
-                    '("${cfg.packages.deno.package}/bin/deno" "lsp")
-                  (tessera-eglot-contact
-                   (cons '("${cfg.packages.languageServer.package}/bin/typescript-language-server" "--stdio")
-                         (seq-keep (pcase-lambda (`(,files . ,command))
-                                     (and (seq-some (lambda (file) (locate-dominating-file default-directory file))
-                                                    files)
-                                          (tessera-javascript--project-command command)))
-                                   tessera-javascript--tool-servers))
-                   "${rassPreset}")))
+                (tessera-eglot-contact
+                 (cons (if (or (locate-dominating-file default-directory "deno.json")
+                               (locate-dominating-file default-directory "deno.jsonc"))
+                           '("${cfg.packages.deno.package}/bin/deno" "lsp")
+                         '("${cfg.packages.languageServer.package}/bin/typescript-language-server" "--stdio"))
+                       (seq-keep (pcase-lambda (`(,files . ,command))
+                                   (and (seq-some (lambda (file) (locate-dominating-file default-directory file))
+                                                  files)
+                                        (tessera-javascript--project-command command)))
+                                 tessera-javascript--tool-servers))
+                 "${rassPreset}"))
 
               (with-eval-after-load 'eglot
                 (add-to-list 'eglot-server-programs
