@@ -18,8 +18,11 @@ mkFeature {
       refactoring from a language server in the buffer.
 
       - Language features (e.g. the javascript feature) bring
-        their language server and start Eglot in their buffers when this
+        their language servers and start Eglot in their buffers when this
         feature is enabled; `M-x eglot` starts it elsewhere
+      - Several language servers in a buffer, e.g. typescript-language-server
+        and ESLint's, run as one through rassumfrassum. Formatting goes to the
+        first of the others that can format, else to the first
       - A server shuts down with its last buffer, edits the
         server proposes are applied without confirmation, files reached
         through go to definition (e.g. libraries) are managed too
@@ -62,6 +65,62 @@ mkFeature {
     }:
     let
       inherit (config.features.emacs.keymaps) keys;
+      rassPreset = pkgs.writeText "tessera.py" ''
+        """Tessera's preset for rassumfrassum.
+
+        The servers come from the command line: the primary one first, then
+        the others in the order they format. Language features extend Logic
+        in their own presets.
+        """
+
+        from rassumfrassum.frassum import DirectResponse, LspLogic
+
+        CAPABILITIES = {
+            "textDocument/formatting": "documentFormattingProvider",
+            "textDocument/rangeFormatting": "documentRangeFormattingProvider",
+            "textDocument/codeAction": "codeActionProvider",
+        }
+
+
+        class Logic(LspLogic):
+            async def on_server_request(self, method, params, source):
+                # Servers like Biome and ESLint register capabilities after
+                # starting. Record those rass routes by, which it only takes from
+                # initialize, and answer all but the file watchers Eglot supports
+                if method in ("client/registerCapability", "client/unregisterCapability"):
+                    key = "registrations" if method.startswith("client/register") else "unregisterations"
+                    rest = []
+                    for registration in params.get(key, []):
+                        if registration.get("method") == "workspace/didChangeWatchedFiles":
+                            rest.append(registration)
+                        elif capability := CAPABILITIES.get(registration.get("method")):
+                            if key == "registrations":
+                                source.caps[capability] = registration.get("registerOptions") or True
+                            else:
+                                source.caps.pop(capability, None)
+                    if not rest:
+                        return DirectResponse(payload=None)
+                    params[key] = rest
+                return await super().on_server_request(method, params, source)
+
+            async def on_client_request(self, method, params, servers):
+                # The first secondary server that formats, else the primary one
+                if capability := {
+                    "textDocument/formatting": "documentFormattingProvider",
+                    "textDocument/rangeFormatting": "documentRangeFormattingProvider",
+                }.get(method):
+                    return [s for s in servers[1:] + servers[:1] if s.caps.get(capability)][:1]
+                return await super().on_client_request(method, params, servers)
+
+
+        def logic_class():
+            return Logic
+      '';
+      rass = pkgs.rassumfrassum.overridePythonAttrs (old: {
+        postInstall = (old.postInstall or "") + ''
+          cp ${rassPreset} $out/${pkgs.python3Packages.python.sitePackages}/rassumfrassum/presets/tessera.py
+        '';
+      });
     in
     lib.mkMerge [
       (mkElispConfig pkgs {
@@ -151,6 +210,18 @@ mkFeature {
 
           (with-eval-after-load 'eglot
             (keymap-set eglot-mode-map "M-n" #'tessera-eglot-next-doc))
+
+          (defun tessera-eglot-contact (servers &optional preset)
+            "Return an Eglot contact for SERVERS, a list of language server commands.
+          That is the only one of them, or rassumfrassum running them as one,
+          the first as the primary server.  Formatting goes to the first of the
+          others that can format, else to the primary one.  PRESET is the file
+          of a rassumfrassum preset extending `rassumfrassum.presets.tessera',
+          e.g. with a language's own settings."
+            (if (cdr servers)
+                `("${rass}/bin/rass" "--log-level" "warn" ,(or preset "tessera")
+                  ,@(seq-mapcat (lambda (server) (cons "--" server)) servers))
+              (car servers)))
 
           (defvar-keymap tessera-eglot-map
             :doc "Keymap of Eglot commands for the buffers it manages."
