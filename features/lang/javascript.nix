@@ -279,6 +279,9 @@ mkFeature {
               (defun tessera-javascript--eglot-ensure ()
                 "Start Eglot, except in JSON buffers."
                 (unless (derived-mode-p 'js-json-mode)
+                  (require 'eglot)
+                  ;; tree-sitter does this way better than the lsp
+                  (setq-local eglot-stay-out-of (cons 'imenu eglot-stay-out-of))
                   (eglot-ensure)))
               (add-hook 'js-base-mode-hook #'tessera-javascript--eglot-ensure)
               (add-hook 'typescript-ts-base-mode-hook #'tessera-javascript--eglot-ensure)
