@@ -50,6 +50,9 @@ mkFeature {
       - `eglot-format` will use the formatter's LSP to format the document if
         one is defined. If not, it's routed through vscode-json-language-server
         as a fallback
+      - the code action "Sort JSON" (`C-c c a`), offered by vscode-json-language-server,
+        sorts the keys of every object in the document; json-utils' `C-c c u s`
+        only those of the object at point
       - formatters are the project's own (`node_modules/.bin`) if it has
         them, otherwise the ones from nixpkgs
       - if `features.emacs.package` is built without tree-sitter, JSON files
@@ -242,16 +245,17 @@ mkFeature {
                 "Return the language servers for the current JSON buffer.
               vscode-json-language-server, with the servers of the tools the project
               sets up, see `tessera-eglot-contact'."
-                (append
-                 (tessera-eglot-contact
-                  (cons '("${cfg.packages.jsonls.package}/bin/vscode-json-language-server" "--stdio")
-                        (seq-keep (pcase-lambda (`(,files . ,command))
-                                    (and (seq-some (lambda (file) (locate-dominating-file default-directory file))
-                                                   files)
-                                         (tessera-json--project-command command)))
-                                  tessera-json--tool-servers)))
-                 ;; vscode-json-language-server only formats when told to
-                 '(:initializationOptions (:provideFormatter t))))
+                (cons 'tessera-json--jsonls
+                      (append
+                       (tessera-eglot-contact
+                        (cons '("${cfg.packages.jsonls.package}/bin/vscode-json-language-server" "--stdio")
+                              (seq-keep (pcase-lambda (`(,files . ,command))
+                                          (and (seq-some (lambda (file) (locate-dominating-file default-directory file))
+                                                         files)
+                                               (tessera-json--project-command command)))
+                                        tessera-json--tool-servers)))
+                       ;; vscode-json-language-server only formats when told to
+                       '(:initializationOptions (:provideFormatter t)))))
 
               (defun tessera-json--json5-server (&rest _)
                 "Return oxfmt's language server, the project's own if it has one."
@@ -259,6 +263,20 @@ mkFeature {
                       (tessera-json--project-command '("${oxfmt}" "--lsp"))))
 
               (with-eval-after-load 'eglot
+                (defclass tessera-json--jsonls (eglot-lsp-server) ()
+                  :documentation "vscode-json-language-server, maybe through rassumfrassum.")
+
+                (cl-defmethod eglot-execute ((server tessera-json--jsonls) action)
+                  "Execute ACTION, sorting the document for the command \"json.sort\".
+              The server leaves that one to the client, which asks it for the edits."
+                  (if (equal (plist-get action :command) "json.sort")
+                      (eglot--apply-text-edits
+                       (jsonrpc-request server :json/sort
+                                        `(,@(eglot--TextDocumentIdentifier)
+                                          :options (:tabSize ,tab-width
+                                                    :insertSpaces ,(if indent-tabs-mode :json-false t)))))
+                    (cl-call-next-method)))
+
                 (defclass tessera-json--oxfmt (eglot-lsp-server) ()
                   :documentation "oxfmt's language server in JSON5 buffers.")
 
