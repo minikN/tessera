@@ -43,6 +43,11 @@ mkFeature {
       the language server offers, such as extracting a function or inlining
       a variable, are code actions.
 
+      `C-c c s` holds the source actions: code actions for the whole buffer,
+      which servers only offer when asked for by kind. Which ones there are
+      depends on the server: typescript-language-server has them all,
+      ESLint and Biome fix all. If several servers offer one, you choose.
+
       | Keys | Command |
       |------|---------|
       | `M-.`, `M-?` | go to definition, find references |
@@ -50,12 +55,16 @@ mkFeature {
       | `C-h .` | documentation at point |
       | `M-n` | next documentation in the echo area |
       | `M-g f` | diagnostics (with the completion feature) |
-      | `C-c c a` | code actions |
+      | `C-c c a` | code actions at point |
       | `C-c c f` | format the region or buffer |
       | `C-c c i`, `C-c c t` | go to implementation, type definition |
-      | `C-c c o` | organize imports |
       | `C-c c q` | quick fix |
       | `C-c c r` | rename |
+      | `C-c c s o` | organize imports |
+      | `C-c c s f` | fix all |
+      | `C-c c s u` | remove unused code |
+      | `C-c c s i`, `C-c c s r` | add missing imports, remove unused ones |
+      | `C-c c s s` | sort imports |
     '';
   };
 
@@ -240,14 +249,69 @@ mkFeature {
                   ,@(seq-mapcat (lambda (server) (cons "--" server)) servers))
               (car servers)))
 
+          (defun tessera-eglot--merge-document-changes (changes)
+            "Return CHANGES with the text edits of each document in one entry.
+          Eglot checks each entry against the buffer's version, so a second entry
+          for a document the first one changed would fail; servers like
+          typescript-language-server send several for fix all."
+            (let (merged)
+              (seq-doseq (change changes)
+                (if-let* (((not (plist-get change :kind)))
+                          (previous (seq-find (lambda (other)
+                                                (and (not (plist-get other :kind))
+                                                     (equal (plist-get other :textDocument)
+                                                            (plist-get change :textDocument))))
+                                              merged)))
+                    (plist-put previous :edits (vconcat (plist-get previous :edits)
+                                                        (plist-get change :edits)))
+                  (push change merged)))
+              (vconcat (nreverse merged))))
+
+          (with-eval-after-load 'eglot
+            (cl-defmethod eglot-execute :before (_server action)
+              "Merge the edits ACTION makes to the same document."
+              (when-let* ((edit (plist-get action :edit))
+                          (changes (plist-get edit :documentChanges)))
+                (plist-put edit :documentChanges (tessera-eglot--merge-document-changes changes)))))
+
+          (defmacro tessera-eglot--define-source-action (name kind doc)
+            "Define NAME, a command executing the KIND code actions of the buffer.
+          DOC begins its docstring."
+            `(defun ,name ()
+               ,(format "%s\nThat is the code action of kind %S for the whole buffer;\nif several servers offer one, choose." doc kind)
+               (interactive)
+               (eglot-code-actions (point-min) (point-max) ,kind t)))
+
+          (tessera-eglot--define-source-action tessera-eglot-organize-imports
+            "source.organizeImports" "Organize the imports.")
+          (tessera-eglot--define-source-action tessera-eglot-fix-all
+            "source.fixAll" "Fix all problems that can be fixed.")
+          (tessera-eglot--define-source-action tessera-eglot-remove-unused
+            "source.removeUnused" "Remove unused code.")
+          (tessera-eglot--define-source-action tessera-eglot-add-missing-imports
+            "source.addMissingImports" "Add the missing imports.")
+          (tessera-eglot--define-source-action tessera-eglot-remove-unused-imports
+            "source.removeUnusedImports" "Remove the unused imports.")
+          (tessera-eglot--define-source-action tessera-eglot-sort-imports
+            "source.sortImports" "Sort the imports.")
+
+          (defvar-keymap tessera-eglot-source-map
+            :doc "Keymap of the code actions for the whole buffer."
+            "f" #'tessera-eglot-fix-all
+            "i" #'tessera-eglot-add-missing-imports
+            "o" #'tessera-eglot-organize-imports
+            "r" #'tessera-eglot-remove-unused-imports
+            "s" #'tessera-eglot-sort-imports
+            "u" #'tessera-eglot-remove-unused)
+
           (defvar-keymap tessera-eglot-map
             :doc "Keymap of Eglot commands for the buffers it manages."
-            "a" #'eglot-code-actions
+            "a" '("Code actions (point)" . eglot-code-actions)
             "f" #'eglot-format
             "i" #'eglot-find-implementation
-            "o" #'eglot-code-action-organize-imports
             "q" #'eglot-code-action-quickfix
             "r" #'eglot-rename
+            "s" (cons "Code actions (buffer)" tessera-eglot-source-map)
             "t" #'eglot-find-typeDefinition)
         '';
       })
