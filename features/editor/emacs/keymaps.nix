@@ -139,15 +139,15 @@ mkFeature {
           (defvar-keymap tessera-toggle-map
             :doc "Prefix keymap for toggling modes.
           Lowercase keys toggle a buffer-local mode, uppercase keys its global variant."
-            "f" #'display-fill-column-indicator-mode
-            "F" #'global-display-fill-column-indicator-mode
-            "l" #'display-line-numbers-mode
-            "L" #'global-display-line-numbers-mode
-            "r" #'read-only-mode
-            "v" #'visual-line-mode
-            "V" #'global-visual-line-mode
-            "w" #'whitespace-mode
-            "W" #'global-whitespace-mode)
+            "f" '("fill column" . display-fill-column-indicator-mode)
+            "F" '("fill column (global)" . global-display-fill-column-indicator-mode)
+            "l" '("line numbers" . display-line-numbers-mode)
+            "L" '("line numbers (global)" . global-display-line-numbers-mode)
+            "r" '("read-only" . read-only-mode)
+            "v" '("visual line mode" . visual-line-mode)
+            "V" '("visual line mode (global)" . global-visual-line-mode)
+            "w" '("whitespace display" . whitespace-mode)
+            "W" '("whitespace display (global)" . global-whitespace-mode))
 
           (defvar tessera-code-package-maps nil
             "Alist of (PREDICATE . KEYMAP) behind `p' in `tessera-code-map'.
@@ -159,7 +159,7 @@ mkFeature {
             (when-let* ((maps (seq-keep (pcase-lambda (`(,predicate . ,map))
                                           (and (funcall predicate) map))
                                         tessera-code-package-maps)))
-              (cons "Packages" (make-composed-keymap maps))))
+              (cons "packages" (make-composed-keymap maps))))
 
           (defvar-keymap tessera-code-map
             :doc "Prefix keymap for working on code.
@@ -167,26 +167,27 @@ mkFeature {
           features their utilities under `u' in their major modes, and `p'
           leads to the package commands of the project at hand, see
           `tessera-code-package-maps'."
-            "p" '(menu-item "Packages" nil :filter tessera-keymaps--package-map))
+            "p" '(menu-item "packages" nil :filter tessera-keymaps--package-map))
         '';
       })
 
       {
         programs.emacs.extraConfig = ''
-          (keymap-set mode-specific-map "${cfg.keys.app}" (cons "Applications" tessera-app-map))
-          (keymap-set mode-specific-map "${cfg.keys.code}" (cons "Code" tessera-code-map))
+          (keymap-set mode-specific-map "${cfg.keys.app}" (cons "applications" tessera-app-map))
+          (keymap-set mode-specific-map "${cfg.keys.code}" (cons "code" tessera-code-map))
           ;; Hide keys whose filter finds nothing, e.g. `C-c c p' outside a package
           (with-eval-after-load 'which-key
             (add-to-list 'which-key-replacement-alist '((nil . "\\`nil\\'") . t))
             (advice-add 'which-key--format-and-replace :around #'tessera-keymaps--which-key-commands)
             (keymap-set which-key-C-h-map "C-c" #'tessera-keymaps-which-key-toggle-commands)
             (keymap-set which-key-C-h-map "c" #'tessera-keymaps-which-key-toggle-commands)
+            (setopt which-key-min-column-description-width 30)
             (setq which-key-C-h-map-prompt
                   (string-replace "toggle-docstrings,"
                                   (concat "toggle-docstrings, \\[tessera-keymaps-which-key-toggle-commands]"
                                           which-key-separator "toggle-commands,")
                                   which-key-C-h-map-prompt)))
-          (keymap-set mode-specific-map "${cfg.keys.toggle}" (cons "Toggles" tessera-toggle-map))
+          (keymap-set mode-specific-map "${cfg.keys.toggle}" (cons "toggles" tessera-toggle-map))
           ;; After every feature set `prefix-help-command' (e.g. Embark's), so
           ;; which-key takes over `C-h' in its popup and falls back to it
           (add-hook 'after-init-hook #'which-key-mode)

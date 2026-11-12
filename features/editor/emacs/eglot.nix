@@ -297,22 +297,22 @@ mkFeature {
 
           (defvar-keymap tessera-eglot-source-map
             :doc "Keymap of the code actions for the whole buffer."
-            "f" #'tessera-eglot-fix-all
-            "i" #'tessera-eglot-add-missing-imports
-            "o" #'tessera-eglot-organize-imports
-            "r" #'tessera-eglot-remove-unused-imports
-            "s" #'tessera-eglot-sort-imports
-            "u" #'tessera-eglot-remove-unused)
+            "f" '("fix all" . tessera-eglot-fix-all)
+            "i" '("add missing imports" . tessera-eglot-add-missing-imports)
+            "o" '("organize imports" . tessera-eglot-organize-imports)
+            "r" '("remove unused imports" . tessera-eglot-remove-unused-imports)
+            "s" '("sort imports" . tessera-eglot-sort-imports)
+            "u" '("remove unused code" . tessera-eglot-remove-unused))
 
           (defvar-keymap tessera-eglot-map
             :doc "Keymap of Eglot commands for the buffers it manages."
-            "a" '("Code actions (point)" . eglot-code-actions)
-            "f" #'eglot-format
-            "i" #'eglot-find-implementation
-            "q" #'eglot-code-action-quickfix
-            "r" #'eglot-rename
-            "s" (cons "Code actions (buffer)" tessera-eglot-source-map)
-            "t" #'eglot-find-typeDefinition)
+            "a" '("code actions (point)" . eglot-code-actions)
+            "f" '("format" . eglot-format)
+            "i" '("go to implementation" . eglot-find-implementation)
+            "q" '("quick fix" . eglot-code-action-quickfix)
+            "r" '("rename" . eglot-rename)
+            "s" (cons "code actions (buffer)" tessera-eglot-source-map)
+            "t" '("go to type definition" . eglot-find-typeDefinition))
         '';
       })
 
@@ -320,7 +320,7 @@ mkFeature {
         programs.emacs.extraConfig = ''
           (with-eval-after-load 'tessera-keymaps
             (with-eval-after-load 'eglot
-              (keymap-set eglot-mode-map "C-c ${keys.code}" (cons "Code" tessera-eglot-map))))
+              (keymap-set eglot-mode-map "C-c ${keys.code}" (cons "code" tessera-eglot-map))))
         '';
       }
     ];
