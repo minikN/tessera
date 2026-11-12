@@ -64,7 +64,9 @@ mkFeature {
       feature, `C-c c u` holds the refactorings in JavaScript and TypeScript
       buffers (with tree-sitter). They complement the
       language server's refactorings, which are code actions (`C-c c a`,
-      emacs.eglot), and work like their js2-refactor namesakes:
+      emacs.eglot), and its source actions for the whole buffer, such as
+      fix all or add missing imports (`C-c c s`, emacs.eglot). They work
+      like their js2-refactor namesakes:
 
       | Keys | Refactoring |
       |------|-------------|
