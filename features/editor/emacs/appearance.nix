@@ -24,7 +24,7 @@ mkFeature {
         (requires the `font` feature to be enabled)
       - `margin` pixels of space around the frame and between side-by-side windows.
          Fringes `fringes` pixels wide
-      - paddings for the mode line, header line and tab bar
+      - paddings for the mode line, header line, tab bar and echo area
       - Italic and bold for comments, keywords and other constructs, fixed-pitch
         code in proportional text
 
@@ -114,6 +114,12 @@ mkFeature {
           type = lib.types.ints.unsigned;
           default = 4;
           description = "Padding in pixels around the tab bar, the default of `tessera-appearance-tab-bar-padding`";
+        };
+        echoArea = lib.mkOption {
+          type = lib.types.ints.unsigned;
+          default = config.features.emacs.appearance.margin;
+          defaultText = lib.literalExpression "margin";
+          description = "Space in pixels between the windows and the echo area, and between stacked windows, the default of `tessera-appearance-echo-area-padding`";
         };
       };
 
@@ -279,6 +285,12 @@ mkFeature {
             :initialize #'custom-initialize-default
             :set #'tessera-appearance--set)
 
+          (defcustom tessera-appearance-echo-area-padding ${toString cfg.padding.echoArea}
+            "Space in pixels between the windows and the echo area, and between stacked windows."
+            :type 'natnum
+            :initialize #'custom-initialize-default
+            :set #'tessera-appearance--set)
+
           (defcustom tessera-appearance-header-line-as-mode-line ${
             if cfg.headerLineAsModeLine then "t" else "nil"
           }
@@ -306,8 +318,12 @@ mkFeature {
             "Apply margin, fringes, paddings and mode line position."
             (modify-all-frames-parameters
              `((internal-border-width . ,tessera-appearance-margin)))
-            (setq window-divider-default-right-width tessera-appearance-margin)
-            (window-divider-mode (if (> tessera-appearance-margin 0) 1 -1))
+            ;; Bottom dividers also separate the lowest windows from the echo area
+            (setq window-divider-default-right-width tessera-appearance-margin
+                  window-divider-default-bottom-width tessera-appearance-echo-area-padding
+                  window-divider-default-places t)
+            (window-divider-mode (if (> (+ tessera-appearance-margin tessera-appearance-echo-area-padding) 0)
+                                     1 -1))
             (fringe-mode tessera-appearance-fringes)
 
             ;; Flat boxes take the face's background, so they work with any theme
