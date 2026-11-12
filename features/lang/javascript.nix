@@ -301,12 +301,12 @@ mkFeature {
               ${lib.optionalString treesit ''
                 (defvar-keymap tessera-javascript-code-map
                   :doc "Keymap under `C-c c' in JavaScript and TypeScript buffers."
-                  "u" (cons "Utils" tessera-javascript-utils-refactor-map))
+                  "u" (cons "utils" tessera-javascript-utils-refactor-map))
                 (with-eval-after-load 'js
-                  (keymap-set js-ts-mode-map "C-c ${keys.code}" (cons "Code" tessera-javascript-code-map)))
+                  (keymap-set js-ts-mode-map "C-c ${keys.code}" (cons "code" tessera-javascript-code-map)))
                 (with-eval-after-load 'typescript-ts-mode
                   (keymap-set typescript-ts-base-mode-map "C-c ${keys.code}"
-                              (cons "Code" tessera-javascript-code-map)))
+                              (cons "code" tessera-javascript-code-map)))
               ''})
           '';
         })

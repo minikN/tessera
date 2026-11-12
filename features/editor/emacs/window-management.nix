@@ -433,15 +433,16 @@ mkFeature {
                           (focus . ,tessera-window-management-focus-map)
                           (fullscreen . ,tessera-window-management-fullscreen-map))))
               (dolist (map maps) (setcdr (cdr map) nil))
-              (keymap-set tessera-window-management-map "w" #'tessera-window-management-toggle-all)
+              (keymap-set tessera-window-management-map "w" '("all side windows" . tessera-window-management-toggle-all))
               (keymap-set tessera-window-management-map "c" (cons "cycle" tessera-window-management-cycle-map))
               (keymap-set tessera-window-management-map "f" (cons "focus" tessera-window-management-focus-map))
               (keymap-set tessera-window-management-map "F" (cons "fullscreen" tessera-window-management-fullscreen-map))
               (dolist (entry tessera-window-management-windows)
-                (when-let* ((key (plist-get (cdr entry) :key)))
+                (when-let* ((key (plist-get (cdr entry) :key))
+                            (name (symbol-name (car entry))))
                   (pcase-dolist (`(,command . ,map) maps)
                     (keymap-set map key
-                                (cons (symbol-name (car entry))
+                                (cons name
                                       (intern (format "tessera-window-management-%s-%s"
                                                       (car entry) command)))))
                   (put (intern (format "tessera-window-management-%s-cycle" (car entry)))
@@ -484,7 +485,7 @@ mkFeature {
                   switch-to-buffer-obey-display-actions t)
           (tessera-window-management-mode 1)
           (with-eval-after-load 'tessera-keymaps
-            (keymap-set mode-specific-map "${cfg.key}" (cons "Windows" tessera-window-management-map)))
+            (keymap-set mode-specific-map "${cfg.key}" (cons "windows" tessera-window-management-map)))
         '';
       }
     ];

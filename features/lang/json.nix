@@ -322,11 +322,11 @@ mkFeature {
               (require 'tessera-json-utils)
               (defvar-keymap tessera-json-code-map
                 :doc "Keymap under `C-c c' in JSON and JSON5 buffers."
-                "u" (cons "Utils" tessera-json-utils-map))
+                "u" (cons "utils" tessera-json-utils-map))
               (with-eval-after-load 'json-ts-mode
-                (keymap-set json-ts-mode-map "C-c ${keys.code}" (cons "Code" tessera-json-code-map)))
+                (keymap-set json-ts-mode-map "C-c ${keys.code}" (cons "code" tessera-json-code-map)))
               (with-eval-after-load 'json5-ts-mode
-                (keymap-set json5-ts-mode-map "C-c ${keys.code}" (cons "Code" tessera-json-code-map))))
+                (keymap-set json5-ts-mode-map "C-c ${keys.code}" (cons "code" tessera-json-code-map))))
           '';
         })
       ]
