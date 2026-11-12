@@ -14,6 +14,13 @@ mkFeature {
       Sets the editor up for JavaScript and TypeScript. Doesn't install any
       runtime or package manager globally.
 
+      | | JavaScript | TypeScript | TSX |
+      |---|---|---|---|
+      | Files | `.js`, `.jsx`, `.mjs`, `.cjs` | `.ts`, `.mts`, `.cts` | `.tsx` |
+      | Language server | typescript-language-server, `deno lsp` in Deno projects | typescript-language-server, `deno lsp` in Deno projects | typescript-language-server, `deno lsp` in Deno projects |
+      | Formatting | the project's Biome, oxfmt or ESLint, else the language server | the project's Biome, oxfmt or ESLint, else the language server | the project's Biome, oxfmt or ESLint, else the language server |
+      | Linting | the language server, the project's ESLint and Biome | the language server, the project's ESLint and Biome | the language server, the project's ESLint and Biome |
+
       - two spaces, in JavaScript like in TypeScript
       - typescript-language-server (`packages.tsls.package`). It
         uses the TypeScript of the project's `node_modules`, or its own if
@@ -31,9 +38,7 @@ mkFeature {
 
       ## With Emacs
 
-      - `.js`, `.jsx`, `.mjs` and `.cjs` files open in `js-ts-mode`,
-        `.ts`, `.mts` and `.cts` in `typescript-ts-mode` and `.tsx` in
-        `tsx-ts-mode`, the tree-sitter modes that ship with Emacs. The
+      - the modes are the tree-sitter modes that ship with Emacs. The
         grammars come with this feature, so Emacs never asks to install them
       - Eglot starts the language server when the emacs.eglot feature is enabled
       - it supports the following runtimes: `node`, `deno` and `bun`
@@ -45,8 +50,8 @@ mkFeature {
         (or `deno lsp`) through rassumfrassum
       - `eglot-format` will use the formatter's LSP to format the document if one is
          defined. If not, it's routed through tsls (or `deno lsp`) as a fallback
-      - if formatter is set, it'll use the local version (`node_modules/.bin`) if
-        available, otherwise it'll use `packages.formatters.<name>.package`
+      - formatters are the project's own (`node_modules/.bin`) if it has
+        them, otherwise the ones from nixpkgs
       - if `features.emacs.package` is built without
         tree-sitter, JavaScript and TypeScript files open in `js-mode` (`.jsx`
         and `.tsx` in `js-jsx-mode`) and home-manager prints a warning. The
@@ -105,13 +110,6 @@ mkFeature {
     {
       packages = {
         tsls.package = tool "typescript-language-server";
-        formatters = {
-          eslint.package = lib.mkPackageOption pkgs "vscode-langservers-extracted" {
-            extraDescription = "Provides ESLint's language server.";
-          };
-          biome.package = tool "biome";
-          oxfmt.package = tool "oxfmt";
-        };
         npm.package = lib.mkPackageOption pkgs "nodejs" {
           extraDescription = "Provides npm, and Node.js for the scripts of npm and pnpm and for the project's own Biome and oxfmt.";
         };
@@ -237,14 +235,14 @@ mkFeature {
 
               (defconst tessera-javascript--tool-servers
                 '((("biome.json" "biome.jsonc" ".biome.json" ".biome.jsonc")
-                   "${cfg.packages.formatters.biome.package}/bin/biome" "lsp-proxy")
+                   "${pkgs.biome}/bin/biome" "lsp-proxy")
                   ((".oxfmtrc.json" ".oxfmtrc.jsonc" "oxfmt.config.ts")
-                   "${cfg.packages.formatters.oxfmt.package}/bin/oxfmt" "--lsp")
+                   "${pkgs.oxfmt}/bin/oxfmt" "--lsp")
                   (("eslint.config.js" "eslint.config.mjs" "eslint.config.cjs"
                     "eslint.config.ts" "eslint.config.mts" "eslint.config.cts"
                     ".eslintrc.js" ".eslintrc.cjs" ".eslintrc.yaml" ".eslintrc.yml"
                     ".eslintrc.json" ".eslintrc")
-                   "${cfg.packages.formatters.eslint.package}/bin/vscode-eslint-language-server" "--stdio"))
+                   "${pkgs.vscode-langservers-extracted}/bin/vscode-eslint-language-server" "--stdio"))
                 "Language servers of the tools, after their configuration files.
               In the order they format.")
 
@@ -271,10 +269,12 @@ mkFeature {
                                 (tsx-ts-mode :language-id "typescriptreact")
                                 (typescript-ts-mode :language-id "typescript"))
                                . tessera-javascript--language-server))
-                ;; Type-check JavaScript outside projects with a jsconfig.json or tsconfig.json
-                (setq-default eglot-workspace-configuration
-                              (plist-put (default-value 'eglot-workspace-configuration)
-                                         :implicitProjectConfiguration '(:checkJs t))))
+                (add-hook 'tessera-eglot-workspace-configuration-functions
+                          #'tessera-javascript--workspace-configuration))
+
+              (defun tessera-javascript--workspace-configuration (_server)
+                "Type-check JavaScript outside projects with a jsconfig.json or tsconfig.json."
+                '(:implicitProjectConfiguration (:checkJs t)))
 
               (defun tessera-javascript--eglot-ensure ()
                 "Start Eglot, except in JSON buffers."
