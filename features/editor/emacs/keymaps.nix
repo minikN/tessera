@@ -38,11 +38,15 @@ mkFeature {
       Commands that replace a built-in one keep its key, e.g. `C-x b` runs
       `consult-buffer` with the completion feature.
 
-      - **Finding keys:** pause after a prefix such as `C-c` and which-key
+      - Pause after a prefix such as `C-c` and which-key
         lists what follows; `C-h` after a prefix lists its keys with
         completion; `M-x describe-keymap` shows a whole keymap
-      - **Toggles:** `C-c t` toggles modes. A lowercase key toggles a mode in
-        the current buffer, the uppercase key its global variant
+      - While which-key's popup is open, `C-h` leads to its commands: `C-h c`
+        switches between the keys' descriptions and the commands they run,
+        for every popup until you switch back, `C-h d` adds docstrings,
+        `C-h n` and `C-h p` page and `C-h h` lists the keys with completion
+      - `C-c t` toggles modes. A lowercase key toggles a mode in the current
+         buffer, the uppercase key its global variant
 
       | Key | Toggles |
       |-----|---------|
@@ -51,59 +55,6 @@ mkFeature {
       | `r` | read-only (buffer only) |
       | `v` / `V` | visual line mode |
       | `w` / `W` | whitespace display |
-
-      **Rules for features**, which keep keys predictable as features are
-      added:
-
-      1. Built-ins first: replace a built-in command through a remap, and put
-         commands that fit an Emacs prefix map there (`M-g` go to, `M-s`
-         search, `C-x p` projects, `C-h` help)
-      2. Everything else goes under `C-c` and a letter. Each letter is a
-         domain; a feature gets its own letter only for a domain of its own,
-         otherwise one key in `C-c a`, with a keymap of its own if it has
-         several commands
-      3. Packages define keymaps but never bind them; the feature's
-         configuration binds them inside
-         `(with-eval-after-load 'tessera-keymaps …)`, so nothing is bound when
-         this feature is off
-      4. Keys are Nix options: `key` for a single entry point, `keys.<name>`
-         when there are several
-      5. Every prefix has a label, shown by which-key
-      6. Keys recommended upstream stay where they don't fit `C-c`, such as
-         Embark's `C-.`
-      7. `C-c c` is the same for every language: commands that work in any
-         language (those of Eglot) sit directly in it, `C-c c u` holds the
-         language's own utilities such as refactorings, bound in its major
-         modes, and `C-c c p` the
-         commands for the packages of the project at hand, in any of its
-         buffers. A language feature adds a predicate recognising its
-         projects and their keymap to `tessera-code-package-maps`
-
-      A feature with one entry point declares a `key` option and binds its
-      command in the applications map:
-
-      ```nix
-      options.key = lib.mkOption {
-        type = lib.types.str;
-        default = "e";
-        description = "Key in `tessera-app-map`";
-      };
-
-      home = { config, ... }: {
-        programs.emacs.extraConfig = '''
-          (with-eval-after-load 'tessera-keymaps
-            (keymap-set tessera-app-map "''${config.features.emacs.foo.key}" #'foo))
-        ''';
-      };
-      ```
-
-      A feature with several commands defines a keymap in its package and
-      mounts it with a label, as window management does with `C-c w`:
-
-      ```elisp
-      (with-eval-after-load 'tessera-keymaps
-        (keymap-set mode-specific-map "w" (cons "Windows" tessera-window-management-map)))
-      ```
     '';
   };
 
@@ -143,6 +94,44 @@ mkFeature {
         summary = "Prefix keymaps shared by tessera features";
 
         config = ''
+          (defgroup tessera-keymaps nil
+            "Prefix keymaps shared by tessera features."
+            :group 'tessera)
+
+          (defcustom tessera-keymaps-which-key-commands nil
+            "Non-nil means which-key shows the commands keys run, not their descriptions.
+          Prefixes keep their descriptions.  `C-h c' toggles it in which-key's popup."
+            :type 'boolean
+            :group 'tessera-keymaps)
+
+          (defvar which-key-max-description-length)
+
+          (defun tessera-keymaps--which-key-commands (format unformatted &rest args)
+            "Call FORMAT, `which-key--format-and-replace', maybe with commands.
+          UNFORMATTED is its list of (KEY . DESCRIPTION).  If
+          `tessera-keymaps-which-key-commands' is non-nil, a description becomes
+          the name of the command KEY runs, untruncated; prefixes keep theirs."
+            (if (not tessera-keymaps-which-key-commands)
+                (apply format unformatted args)
+              (let ((which-key-max-description-length nil))
+                (apply format
+                       (mapcar (pcase-lambda (`(,key . ,description))
+                                 (let ((command (ignore-errors (key-binding (kbd key)))))
+                                   (cons key (if (and command (symbolp command))
+                                                 (symbol-name command)
+                                               description))))
+                               unformatted)
+                       args))))
+
+          (defun tessera-keymaps-which-key-toggle-commands (&optional _key)
+            "Toggle between descriptions and commands in which-key's popup.
+          See `tessera-keymaps-which-key-commands'."
+            (interactive)
+            (setq tessera-keymaps-which-key-commands (not tessera-keymaps-which-key-commands))
+            (when (which-key--popup-showing-p)
+              (which-key-reload-key-sequence)
+              (which-key--create-buffer-and-show (which-key--current-prefix))))
+
           (defvar-keymap tessera-app-map
             :doc "Prefix keymap for applications.
           Features bind their entry commands here.")
@@ -188,9 +177,19 @@ mkFeature {
           (keymap-set mode-specific-map "${cfg.keys.code}" (cons "Code" tessera-code-map))
           ;; Hide keys whose filter finds nothing, e.g. `C-c c p' outside a package
           (with-eval-after-load 'which-key
-            (add-to-list 'which-key-replacement-alist '((nil . "\\`nil\\'") . t)))
+            (add-to-list 'which-key-replacement-alist '((nil . "\\`nil\\'") . t))
+            (advice-add 'which-key--format-and-replace :around #'tessera-keymaps--which-key-commands)
+            (keymap-set which-key-C-h-map "C-c" #'tessera-keymaps-which-key-toggle-commands)
+            (keymap-set which-key-C-h-map "c" #'tessera-keymaps-which-key-toggle-commands)
+            (setq which-key-C-h-map-prompt
+                  (string-replace "toggle-docstrings,"
+                                  (concat "toggle-docstrings, \\[tessera-keymaps-which-key-toggle-commands]"
+                                          which-key-separator "toggle-commands,")
+                                  which-key-C-h-map-prompt)))
           (keymap-set mode-specific-map "${cfg.keys.toggle}" (cons "Toggles" tessera-toggle-map))
-          (which-key-mode 1)
+          ;; After every feature set `prefix-help-command' (e.g. Embark's), so
+          ;; which-key takes over `C-h' in its popup and falls back to it
+          (add-hook 'after-init-hook #'which-key-mode)
         '';
       }
     ];
