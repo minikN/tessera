@@ -32,6 +32,9 @@ mkFeature {
       - Flymake runs only in trusted files under Emacs 31, so diagnostics need
         their directories in `trusted-content`, e.g.
         `(setopt trusted-content '("~/src/"))`
+      - Language features configure their servers through
+        `eglot-workspace-configuration`. A project that sets it in its
+        `.dir-locals.el` replaces their settings there
 
       Eglot works through Emacs' own facilities, so their keys keep working.
       With the keymaps feature, Eglot's own commands live directly under
@@ -208,8 +211,22 @@ mkFeature {
 
           (add-hook 'eglot-managed-mode-hook #'tessera-eglot--setup-eldoc)
 
+          (defvar tessera-eglot-workspace-configuration-functions nil
+            "Functions returning sections of the workspace configuration.
+          Each is called with the server and returns a plist of sections, see
+          `eglot-workspace-configuration'.  They run with the project's
+          directory-local variables, so a project can change the variables they
+          read.  Language features add to it.")
+
+          (defun tessera-eglot-workspace-configuration (server)
+            "Return the sections of `tessera-eglot-workspace-configuration-functions'.
+          SERVER is passed on to them."
+            (seq-mapcat (lambda (function) (funcall function server))
+                        tessera-eglot-workspace-configuration-functions))
+
           (with-eval-after-load 'eglot
-            (keymap-set eglot-mode-map "M-n" #'tessera-eglot-next-doc))
+            (keymap-set eglot-mode-map "M-n" #'tessera-eglot-next-doc)
+            (setq-default eglot-workspace-configuration #'tessera-eglot-workspace-configuration))
 
           (defun tessera-eglot-contact (servers &optional preset)
             "Return an Eglot contact for SERVERS, a list of language server commands.
