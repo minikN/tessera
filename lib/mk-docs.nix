@@ -14,9 +14,13 @@
 ##
 ## `(mkDocs { ... }).man` is the same documentation as a man page
 ## (share/man/man5/tessera.5), a separate build that doesn't need mdBook.
+##
+## If `sourceUrl` is set (e.g. "https://github.com/minikN/tessera/blob/main"),
+## the source path at the end of each page links there.
 {
   pkgs,
   features,
+  sourceUrl ? null,
 }:
 
 let
@@ -61,6 +65,14 @@ let
     builtins.unsafeDiscardStringContext (
       builtins.head (builtins.match ".*/(features/.*)" (toString f.file))
     );
+
+  ## The source path at the end of a page, a link if `sourceUrl` is set.
+  sourceLinkOf =
+    f:
+    if sourceUrl == null then
+      "`${sourceFileOf f}`"
+    else
+      "[`${sourceFileOf f}`](${sourceUrl}/${sourceFileOf f})";
 
   ## The folder below features/ is the feature's category ("wm/launcher").
   categoryOf = f: lib.removePrefix "features/" (dirOf (sourceFileOf f));
@@ -195,7 +207,7 @@ let
       ${concatMapStringsSep "\n" renderOption (optionsOf f)}
       ---
 
-      Source: `${sourceFileOf f}`
+      Source: ${sourceLinkOf f}
     '';
 
   ## The documented features grouped by category: { "wm/launcher" = [ ... ]; }
