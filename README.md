@@ -40,6 +40,36 @@ flake.nix
 hosts/           # one file per machine
 features/        # your own features, next to tessera's
 ```
+## Documentation
+
+tessera features multiple ways of consuming its configuration. The easiest
+way would be to use the [online documentation](https://minikn.github.io/tessera/).
+
+If desired there are ways to build the docs by yourself and view them offline:
+
+```bash
+nix build github:minikN/tessera#docs
+open result/html/index.html   # the website (xdg-open on Linux)
+ls result/markdown            # the Markdown it is built from
+```
+
+If man pages are preferred, the `manual` feature is on by default which
+installs `tessera(5)` man pages. This feature is on by default. So even
+a host with no features enabled manually, the man pages will be installed:
+
+```nix
+# hosts/laptop.nix
+{
+  system = "aarch64-darwin";
+}
+```
+
+Switching to that configuration installs the man page:
+
+```bash
+sudo darwin-rebuild switch --flake .#laptop   # or nixos-rebuild, or home-manager switch
+man tessera
+```
 
 ## How it works
 
@@ -246,36 +276,6 @@ globals = { config, ... }: {
   apps.shell = lib.mkIf config.features.zsh.enable
     "${config.features.zsh.package}/bin/zsh";
 };
-```
-
-## Documentation
-
-Every tessera feature is documented, and the documentation is built as a
-website, as Markdown and as a man page:
-
-```bash
-nix build github:minikN/tessera#docs
-open result/html/index.html   # the website (xdg-open on Linux)
-ls result/markdown            # the Markdown it is built from
-```
-
-The man page, `tessera(5)`, is installed by the `manual` feature, which is
-enabled by default. So even a host that only sets its system, and gets
-nothing but the features that are on by default (`home`, `user`, `xdg`,
-`base`, `bootloader` (NixOS only) and `manual`), has it:
-
-```nix
-# hosts/laptop.nix
-{
-  system = "aarch64-darwin";
-}
-```
-
-Switching to that configuration installs the man page:
-
-```bash
-sudo darwin-rebuild switch --flake .#laptop   # or nixos-rebuild, or home-manager switch
-man tessera
 ```
 
 Leave it out with `features.manual.enable = false;`. To build only the man
