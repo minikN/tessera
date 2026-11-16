@@ -5,18 +5,12 @@
   setsOf,
 }:
 
-## Build the documentation of the documented `features`: one Markdown page per
-## feature, grouped by folder, and an mdBook site from them.
-##
-## The result has two folders:
-##   $out/markdown  the generated Markdown (mdBook's source)
+## Build the documentation. The result has two folders:
+##   $out/markdown  the generated Markdown
 ##   $out/html      the website built from it
 ##
-## `(mkDocs { ... }).man` is the same documentation as a man page
-## (share/man/man5/tessera.5), a separate build that doesn't need mdBook.
-##
-## If `sourceUrl` is set (e.g. "https://github.com/minikN/tessera/blob/main"),
-## the source path at the end of each page links there.
+## `(mkDocs { ... }).man`: man pages (share/man/man5/tessera.5)
+## `(mkDocs { ... }).info`: info manual
 {
   pkgs,
   features,
@@ -26,10 +20,8 @@
 let
   inherit (lib) concatStringsSep concatMapStringsSep optionalString;
 
-  ## Some facts can only be found out by evaluating the features: which
-  ## platforms they support, their options and what they set. So we evaluate
-  ## all features twice, once as a Linux (NixOS) host and once as a macOS
-  ## host.
+  ## We need to evaluate the features twice for each platform to find out
+  ## what platform they support; what options they take
   evaluatedOn = {
     nixos = evalOptions {
       pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
@@ -43,30 +35,26 @@ let
     };
   };
 
-  ## The arguments a module function gets (`config`, `options`, ...), taken
-  ## from one of the evaluations above.
+  ## The arguments a module function gets (`config`, `options`, ...)
   moduleArgsOf = evaluation: {
     inherit (evaluation) config options;
     inherit lib;
     pkgs = evaluation._module.args.pkgs;
   };
 
-  ## Only features with a `doc` block get a page.
+  ## Filter features that don't have documentation
   documentedFeatures = builtins.filter (f: f.doc != null) features;
 
-  ## The feature's name as written in a host: "emacs.keymaps".
   featureNameOf = f: concatStringsSep "." (lib.toList f.name);
 
-  ## Where the feature lives in the repository, e.g.
-  ## "features/wm/launcher/rofi.nix". `f.file` is a path in the Nix store, so
-  ## we cut off everything before "features/".
+  ## Path of the feature (e.g. "wm/launcher/rofi.nix")
   sourceFileOf =
     f:
     builtins.unsafeDiscardStringContext (
       builtins.head (builtins.match ".*/(features/.*)" (toString f.file))
     );
 
-  ## The source path at the end of a page, a link if `sourceUrl` is set.
+  ## The source path at the end of a page, a link if `sourceUrl` is set
   sourceLinkOf =
     f:
     if sourceUrl == null then
@@ -74,17 +62,15 @@ let
     else
       "[`${sourceFileOf f}`](${sourceUrl}/${sourceFileOf f})";
 
-  ## The folder below features/ is the feature's category ("wm/launcher").
+  ## using a the feature path as its category (e.g. rofi: wm/launcher)
   categoryOf = f: lib.removePrefix "features/" (dirOf (sourceFileOf f));
 
-  ## How a category is shown in the table of contents: "Wm › Launcher".
   categoryTitle =
     category:
     concatMapStringsSep " › " (s: lib.toUpper (lib.substring 0 1 s) + lib.substring 1 (-1) s) (
       lib.splitString "/" category
     );
 
-  ## Where the feature's page goes: "wm/launcher/rofi.md".
   pagePathOf = f: "${categoryOf f}/${featureNameOf f}.md";
 
   supportedPlatformsOf = f: {
@@ -94,10 +80,8 @@ let
     darwin = f.supports "darwin" (moduleArgsOf evaluatedOn.darwin);
   };
 
-  ## A cell of the page's platform table: "✓" or "—".
   checkmark = supported: if supported then "✓" else "—";
 
-  ## The Home cell also says which OS it works on if it's only one of them.
   homeCheckmark =
     platforms:
     if platforms.homeLinux && platforms.homeMacos then
@@ -109,9 +93,7 @@ let
     else
       "—";
 
-  ## Every option below `features`, as a flat list. Each entry has the
-  ## option's name, description, type, default and so on. Options hidden
-  ## from users are left out.
+  ## Flat list of user-facing options
   allOptions = builtins.filter (o: o.visible && !o.internal) (
     lib.optionAttrSetToDocList evaluatedOn.nixos.options.features
   );
@@ -137,7 +119,7 @@ let
         best
     ) [ ] allFeatureNames;
 
-  ## The options of one feature, its `enable` option first.
+  ## The options of a feature
   optionsOf =
     f:
     let
@@ -146,11 +128,7 @@ let
     in
     builtins.filter isEnable own ++ builtins.filter (o: !isEnable o) own;
 
-  ## Text as inline code, or as a code block if it has several lines.
-  ## NOTE: We hardcode `nix` as the syntax, what if we want to print a different language?
   formatCode = text: if lib.hasInfix "\n" text then "\n\n```nix\n${text}\n```" else "`${text}`";
-
-  ## An option's default or example: prose as it is, anything else as code.
   formatValue = v: if v._type == "literalMD" then v.text else formatCode v.text;
 
   ## `names` as a comma-separated list of inline code, or "none".
@@ -158,8 +136,8 @@ let
     names: if names == [ ] then "none" else concatMapStringsSep ", " (n: "`${n}`") names;
 
   ## An option rendered in MD
-  ## Adding correct line break `\\\n` to type, default, example
-  ## Adding double line break `\n\n` to code blocks so they start a new paragraph
+  ## - adding correct line break `\\\n` to type, default, example
+  ## - adding double line break `\n\n` to code blocks so they start a new paragraph
   renderOption =
     o:
     let
@@ -210,7 +188,7 @@ let
       Source: ${sourceLinkOf f}
     '';
 
-  ## The documented features grouped by category: { "wm/launcher" = [ ... ]; }
+  ## features grouped by category
   featuresByCategory = lib.groupBy categoryOf documentedFeatures;
 
   tableOfContents = ''
@@ -233,9 +211,6 @@ let
     src = "src"
   '';
 
-  ## The book's folder: settings, table of contents, introduction and one
-  ## page per feature, each written to a file in the Nix store and linked
-  ## into place.
   bookDir = pkgs.linkFarm "tessera-docs-src" (
     [
       {
@@ -257,23 +232,19 @@ let
     }) documentedFeatures
   );
 
-  ## Converting the MD pages to one man page
+  ## MD page to man page / info manual
   ## Print the contents of a MD `file` with its headings moved `by`
   ## levels (-1: "##" becomes "#", 1: "#" becomes "##").
   printWithShiftedHeadings =
     by: file: "pandoc -f gfm -t gfm --shift-heading-level-by=${toString by} ${file}; echo";
 
-  ## Print a top-level heading ("# NAME").
   printSectionHeading = text: "printf '\\n# %s\\n\\n' ${lib.escapeShellArg text}";
 
-  ## Print all pages as one Markdown document, the source of the man page.
+  ## Print all pages as one Markdown document, the source of the man page and
+  ## the Info manual: the README's sections, then a top-level heading per
+  ## category with its features below it.
   printCombinedMarkdown = concatStringsSep "\n" (
-    [
-      (printSectionHeading "NAME")
-      "echo 'tessera - composable features for NixOS, nix-darwin and home-manager'"
-      (printSectionHeading "DESCRIPTION")
-      (printWithShiftedHeadings (-1) "${bookDir}/src/README.md")
-    ]
+    [ (printWithShiftedHeadings (-1) "${bookDir}/src/README.md") ]
     ++ lib.concatLists (
       lib.mapAttrsToList (
         category: fs:
@@ -283,14 +254,9 @@ let
     )
   );
 
-  ## Applying man page specific changes to the md document.
-  ## Pandoc supports `lua-filter` so lua makes sense here.
-  ## Changes:
-  ## - Uppercase headings
-  ## - Strip urls from links (leaving only text)
-  ## - Remove unnecessary blank lines
-  ## - Remove the README's badges (linked images)
-  manPageFilter = pkgs.writeText "man-filter.lua" ''
+  ## Remove the README's badges (linked images) from the man page and the
+  ## Info manual.
+  dropBadgesFilter = pkgs.writeText "drop-badges.lua" ''
     function Para(p)
       for _, el in ipairs(p.content) do
         local isBadge = el.t == "Link" and #el.content == 1 and el.content[1].t == "Image"
@@ -300,7 +266,14 @@ let
       end
       return {}
     end
+  '';
 
+  ## Applying man page specific changes to the md document.
+  ## Changes:
+  ## - uppercase headings
+  ## - strip urls from links (leaving only text)
+  ## - remove unnecessary blank lines
+  manPageFilter = pkgs.writeText "man-filter.lua" ''
     function Header(h)
       if h.level == 1 then
         h.content = pandoc.text.upper(pandoc.utils.stringify(h.content))
@@ -363,21 +336,89 @@ let
     end
   '';
 
-  ## Build the actual man page from the single MD document we create above
-  ## and the applied lua filters.
+  ## Build the actual man page from the single MD document create above and the applied filters
   manPage = pkgs.runCommand "tessera-man" { nativeBuildInputs = [ pkgs.pandoc ]; } ''
     {
+    ${printSectionHeading "NAME"}
+    echo 'tessera - composable features for NixOS, nix-darwin and home-manager'
+    ${printSectionHeading "DESCRIPTION"}
     ${printCombinedMarkdown}
     } > tessera.md
     mkdir -p $out/share/man/man5
-    pandoc -f gfm -t man --standalone --lua-filter ${manPageFilter} \
+    pandoc -f gfm -t man --standalone --lua-filter ${dropBadgesFilter} --lua-filter ${manPageFilter} \
       -M title=TESSERA -M section=5 tessera.md -o $out/share/man/man5/tessera.5
   '';
+
+  ## Changes for the Info manual
+  ## - sections and the categories become chapters
+  ## - Headings become bold lines
+  ## - Links to websites plain Texinfo
+  ## - Code blocks as @example
+  infoFilter = pkgs.writeText "info-filter.lua" ''
+    local function escape(text)
+      return (text:gsub("[@{}]", "@%0"):gsub(",", "@comma{}"))
+    end
+
+    function Header(h)
+      if h.level > 2 then
+        return pandoc.Para({ pandoc.Strong(h.content) })
+      end
+      local command = h.level == 1 and "@chapter " or "@section "
+      return pandoc.RawBlock("texinfo", command .. escape(pandoc.utils.stringify(h.content)))
+    end
+
+    function Link(l)
+      if l.target:find("://") then
+        local text = escape(pandoc.utils.stringify(l.content))
+        return pandoc.RawInline("texinfo", "@uref{" .. escape(l.target) .. ", " .. text .. "}")
+      end
+    end
+
+    function CodeBlock(c)
+      return pandoc.RawBlock("texinfo", "@example\n" .. escape(c.text) .. "\n@end example\n@sp 1")
+    end
+
+    function HorizontalRule()
+      return {}
+    end
+  '';
+
+  ## The manual's entry in Info's directory
+  infoDirEntry = pkgs.writeText "dir-entry.texi" ''
+    @dircategory Tessera
+    @direntry
+    * Tessera: (tessera).           Composable features for NixOS, nix-darwin and home-manager.
+    @end direntry
+  '';
+
+  ## Build the Info manual from the same MD document and its `dir` file
+  infoManual =
+    pkgs.runCommand "tessera-info"
+      {
+        nativeBuildInputs = [
+          pkgs.pandoc
+          pkgs.texinfo
+        ];
+      }
+      ''
+        {
+        ${printCombinedMarkdown}
+        } > tessera.md
+        pandoc -f gfm -t texinfo --standalone --lua-filter ${dropBadgesFilter} --lua-filter ${infoFilter} \
+          --include-in-header ${infoDirEntry} -M title=tessera tessera.md -o tessera.texi
+        mkdir -p $out/share/info
+        makeinfo --no-split tessera.texi -o $out/share/info/tessera.info \
+          -c TREE_TRANSFORMATIONS=insert_nodes_for_sectioning_commands,complete_tree_nodes_menus
+        install-info $out/share/info/tessera.info $out/share/info/dir
+      '';
 in
 pkgs.runCommand "tessera-docs"
   {
     nativeBuildInputs = [ pkgs.mdbook ];
-    passthru.man = manPage;
+    passthru = {
+      man = manPage;
+      info = infoManual;
+    };
   }
   ''
     cp -rL ${bookDir} book
