@@ -74,6 +74,9 @@ sudo darwin-rebuild switch --flake .#laptop   # or nixos-rebuild, or home-manage
 man tessera
 ```
 
+With the `emacs` feature enabled, the `manual` feature also adds the
+documentation to Emacs as an Info manual: `C-h i m Tessera`.
+
 ## How it works
 
 `mkFlake` does three things:
