@@ -1,5 +1,8 @@
 # tessera
 
+[![docs](https://github.com/minikN/tessera/actions/workflows/docs.yml/badge.svg)](https://github.com/minikN/tessera/actions/workflows/docs.yml)
+[![License](https://img.shields.io/github/license/minikN/tessera)](https://github.com/minikN/tessera/blob/main/LICENSE)
+
 Composable features for NixOS, nix-darwin, and home-manager. A host picks
 the features it wants and sets their options; features talk to each other
 through shared globals. Hosts and features are discovered from folders:
