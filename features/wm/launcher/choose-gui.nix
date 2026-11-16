@@ -1,10 +1,27 @@
 { lib, mkFeature, ... }:
 
+let
+  mkChoose =
+    config: pkgs:
+    let
+      choose = "${config.features.choose-gui.package}/bin/choose";
+      font = config.features.font;
+      mono = font.fonts.monospace;
+      theme = config.features.theme;
+    in
+    pkgs.writeShellScript "choose" ''
+      /usr/bin/pkill -f '^${choose}'
+      exec ${choose}${
+        lib.optionalString font.enable " -f ${lib.escapeShellArg mono.name} -s ${toString (mono.size * 3 / 2)}"
+        + lib.optionalString theme.enable " -c ${theme.colors.base0D} -b ${theme.colors.base02}"
+      } "$@"
+    '';
+in
 mkFeature {
   name = "choose-gui";
 
   doc = {
-    summary = "choose, a fuzzy finder for macOS, as launcher and password menu";
+    summary = "choose, a fuzzy finder for macOS, as launcher, password menu and passphrase prompt";
     description = ''
       Installs and configures choose (choose-gui).
 
@@ -17,6 +34,9 @@ mkFeature {
       - `enablePasswordManager`: Sets choose as the password manager. Requires the
         `password-store` feature to be enabled. Sets `globals.apps.passwordManager`
         to the bin path of choose so other features can reference it
+      - `enablePinentry`: Sets choose as the pinentry application, asking for
+        passphrases with its password mode (`-P`). Requires the `gnupg` feature to
+        be enabled
 
       ```nix
       features = {
@@ -33,16 +53,36 @@ mkFeature {
   options =
     { config, pkgs, ... }:
     let
-      inherit (lib) mkOption mkPackageOption types;
+      inherit (lib) mkOption types;
       enabled = config.features.choose-gui.enable;
     in
     {
-      package = mkPackageOption pkgs "choose-gui" { };
+      package = mkOption {
+        type = types.package;
+        ## TODO: use nixpkgs version once updated (-P flag)
+        default = pkgs.choose-gui.overrideAttrs {
+          version = "1.5.0-unstable-2026-01-20";
+          src = pkgs.fetchFromGitHub {
+            owner = "chipsenkbeil";
+            repo = "choose";
+            rev = "8e83b711b1ad377ea58aa4ac8034e5c5e4310c33";
+            hash = "sha256-OArdN7whm3vMr0Wiv5hiDReotBsA6KNbZDH7FTzyqgY=";
+          };
+        };
+        defaultText = lib.literalMD "`pkgs.choose-gui` built from upstream master, for password mode (`-P`)";
+        description = "The choose-gui package to use. `enablePinentry` needs one with password mode (`-P`)";
+      };
       enableLauncher = mkOption {
         type = types.bool;
         defaultText = lib.literalExpression "config.features.choose-gui.enable";
         default = enabled;
         description = "Use this feature as the global launcher";
+      };
+      enablePinentry = mkOption {
+        type = types.bool;
+        defaultText = lib.literalExpression "config.features.choose-gui.enable";
+        default = enabled;
+        description = "Use this feature as the global pinentry";
       };
       enablePasswordManager = mkOption {
         type = types.bool;
@@ -56,16 +96,7 @@ mkFeature {
     { config, pkgs, ... }:
     let
       cfg = config.features.choose-gui;
-
-      cmd =
-        let
-          font = config.features.font;
-          mono = font.fonts.monospace;
-          theme = config.features.theme;
-        in
-        "${cfg.package}/bin/choose"
-        + lib.optionalString font.enable " -f ${lib.escapeShellArg mono.name} -s ${toString (mono.size * 3 / 2)}"
-        + lib.optionalString theme.enable " -c ${theme.colors.base0D} -b ${theme.colors.base02}";
+      cmd = mkChoose config pkgs;
 
       launcher = pkgs.writeShellScript "choose-launcher" ''
         dirs=(/Applications /System/Applications "$HOME/Applications" /System/Library/CoreServices/Finder.app)
@@ -120,8 +151,42 @@ mkFeature {
     };
 
   home =
-    { config, ... }:
-    {
-      home.packages = [ config.features.choose-gui.package ];
-    };
+    { config, pkgs, ... }:
+    let
+      cfg = config.features.choose-gui;
+      cmd = mkChoose config pkgs;
+
+      pinentry = pkgs.writeShellScriptBin "pinentry-choose" ''
+        decode () { printf '%b' "''${1//%/\\x}"; }
+
+        echo 'OK Pleased to meet you'
+        while read -r command arg; do
+          case "$command" in
+            SETDESC)   desc=$(decode "$arg") ;;
+            SETPROMPT) prompt=$(decode "$arg") ;;
+            SETERROR)  error=$(decode "$arg") ;;
+            GETINFO)   [ "$arg" = pid ] && echo "D $$" ;;
+            GETPIN)
+              pin=$(${cmd} -P -p "''${error:-$prompt}" </dev/null) \
+                || { error=; echo 'ERR 83886179 Operation cancelled'; continue; }
+              error=
+              [ -n "$pin" ] && echo "D ''${pin//%/%25}"
+              ;;
+            CONFIRM)
+              [ "$(printf 'Yes\nNo\n' | ${cmd} -p "''${desc%%$'\n'*}")" = Yes ] \
+                || { echo 'ERR 83886194 Not confirmed'; continue; }
+              ;;
+            BYE) exit 0 ;;
+          esac
+          echo OK
+        done
+      '';
+    in
+    lib.mkMerge [
+      { home.packages = [ cfg.package ]; }
+
+      (lib.mkIf (cfg.enablePinentry && config.features.gnupg.enable) {
+        services.gpg-agent.pinentry.package = lib.mkForce pinentry;
+      })
+    ];
 }
