@@ -43,6 +43,7 @@
           docs = lib.mkDocs {
             inherit pkgs;
             inherit (lib) features;
+            sourceUrl = "https://github.com/minikN/tessera/blob/main";
           };
         }
         // (pkgs.extend lib.overlay).tessera
