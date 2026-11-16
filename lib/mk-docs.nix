@@ -289,7 +289,18 @@ let
   ## - Uppercase headings
   ## - Strip urls from links (leaving only text)
   ## - Remove unnecessary blank lines
+  ## - Remove the README's badges (linked images)
   manPageFilter = pkgs.writeText "man-filter.lua" ''
+    function Para(p)
+      for _, el in ipairs(p.content) do
+        local isBadge = el.t == "Link" and #el.content == 1 and el.content[1].t == "Image"
+        if not (isBadge or el.t == "Space" or el.t == "SoftBreak") then
+          return nil
+        end
+      end
+      return {}
+    end
+
     function Header(h)
       if h.level == 1 then
         h.content = pandoc.text.upper(pandoc.utils.stringify(h.content))
