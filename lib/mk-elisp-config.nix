@@ -8,7 +8,6 @@ pkgs:
   summary ? "No description provided",
   earlyInit ? "",
   addToInitEl ? true,
-  manual ? null,
 }:
 {
   programs.emacs = {
@@ -24,7 +23,6 @@ pkgs:
             name
             config
             summary
-            manual
             ;
           packageRequires = deps;
         })
