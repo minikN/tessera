@@ -1,12 +1,22 @@
-# tessera
+<div align="center">
+<h1>tessera</h1>
+<h5><em>Composable features for NixOS, nix-darwin, and home-manager</em></h5>
 
 [![docs](https://github.com/minikN/tessera/actions/workflows/docs.yml/badge.svg)](https://github.com/minikN/tessera/actions/workflows/docs.yml)
 [![License](https://img.shields.io/github/license/minikN/tessera)](https://github.com/minikN/tessera/blob/main/LICENSE)
 
-Composable features for NixOS, nix-darwin, and home-manager. A host picks
-the features it wants and sets their options; features talk to each other
-through shared globals. Hosts and features are discovered from folders:
-drop a `.nix` file in the right place and it is picked up.
+</div>
+
+<p style="text-align: justify">
+tessera is built from <em>features</em>: self-contained building blocks that each configure one part of a system, like a
+shell, an editor or a window manager. A host enables the features it wants and tunes them through options. Enabled features
+are aware of each other and fit together on their own: the terminal and editor pick up the theme's colours and font, and the
+window manager launches whichever terminal and launcher you chose. You can also write your own features and use them
+alongside tessera's.
+
+Your configuration becomes a short list of decisions instead of glue code, and swapping one piece for
+another doesn't mean rewiring the rest.
+</p>
 
 ## Using tessera
 
@@ -48,17 +58,19 @@ features/        # your own features, next to tessera's
 tessera features multiple ways of consuming its configuration. The easiest
 way would be to use the [online documentation](https://minikn.github.io/tessera/).
 
+### Offline
 If desired there are ways to build the docs by yourself and view them offline:
 
 ```bash
 nix build github:minikN/tessera#docs
-open result/html/index.html   # the website (xdg-open on Linux)
-ls result/markdown            # the Markdown it is built from
+open result/html/index.html # webpage
+ls result/markdown          # markdown
 ```
 
-If man pages are preferred, the `manual` feature is on by default which
-installs `tessera(5)` man pages. This feature is on by default. So even
-a host with no features enabled manually, the man pages will be installed:
+### man pages
+If man pages are preferred, the `manual` installs `tessera(5)` man pages.
+This feature is on by default. So even a host with no features enabled
+manually, the man pages will be installed:
 
 ```nix
 # hosts/laptop.nix
@@ -74,6 +86,10 @@ sudo darwin-rebuild switch --flake .#laptop   # or nixos-rebuild, or home-manage
 man tessera
 ```
 
+Leave it out with `features.manual.enable = false;`. To build only the man page, run
+`nix build github:minikN/tessera#docs.man`.
+
+### Inside emacs
 With the `emacs` feature enabled, the `manual` feature also adds the
 documentation to Emacs as an Info manual: `C-h i m Tessera`.
 
@@ -207,31 +223,32 @@ Each block's body is automatically wrapped in
 config) and the standalone `homeConfigurations.<host>` output — keep it
 free of system-level options.
 
-**Platforms.** A feature supports Home, NixOS and macOS where it has a
+### Platforms
+A feature supports Home, NixOS and macOS where it has a
 block (a `home` block counts for both systems) and its `package` option,
 if any, is available there. `platforms` only narrows that, for what can't
 be derived (e.g. `gtk` installs Linux-only tools). Explicitly enabling a
 feature on a host it doesn't support is an error; features that are only
 on by default are left alone.
 
-**Dependencies.** A nested feature (`emacs.keymaps`) requires its parent
+### Dependencies
+A nested feature (`emacs.keymaps`) requires its parent
 (`emacs`); Enabling a feature without its requirements is an error.
 
 ### Keybindings
-
 Every feature for an application that takes keybindings (window managers,
 launchers, terminals, shells) has a `keybindings` option. Your bindings
 are merged over the feature's defaults: new keys are added, and a key the
 feature already binds is overridden.
 
-If the feature has options that keybindings depend on (sway's `modifier`,
-`left`, `right`, `up`, `down`), `keybindings` may also be a function of
-them, plus `apps` (the global apps: terminal, launcher, …):
+If the feature has options that keybindings depend on (a window manager's
+`modifier`, `left`, `right`, `up`, `down`), `keybindings` may also be a
+function of them, plus `apps` (the global apps: terminal, launcher, …):
 
 ```nix
 features.sway.keybindings = { modifier, left, apps, ... }: {
   "${modifier}+Shift+${left}" = "move left 50px";
-  "${modifier}+t" = "exec ${apps.terminal}";
+  "${modifier}+t" = "exec ${apps.terminal}"; # terminal will be whatever terminal feature is active
 };
 ```
 
@@ -283,12 +300,6 @@ globals = { config, ... }: {
     "${config.features.zsh.package}/bin/zsh";
 };
 ```
-
-Leave it out with `features.manual.enable = false;`. To build only the man
-page, run `nix build github:minikN/tessera#docs.man`.
-
-In tessera, `nix flake check` fails when a feature has no `doc` block with a
-`summary` and a `description`, or when an option has no description.
 
 ## Adding things
 
