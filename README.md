@@ -2,6 +2,7 @@
 <h1>tessera</h1>
 <h5><em>Composable features for NixOS, nix-darwin, and home-manager</em></h5>
 
+[![tests](https://github.com/minikN/tessera/actions/workflows/test.yml/badge.svg)](https://github.com/minikN/tessera/actions/workflows/test.yml)
 [![docs](https://github.com/minikN/tessera/actions/workflows/docs.yml/badge.svg)](https://github.com/minikN/tessera/actions/workflows/docs.yml)
 [![License](https://img.shields.io/github/license/minikN/tessera)](https://github.com/minikN/tessera/blob/main/LICENSE)
 

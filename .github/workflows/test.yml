@@ -1,0 +1,28 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            system: x86_64-linux
+          - os: macos-latest
+            system: aarch64-darwin
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: cachix/install-nix-action@v31
+      # One process per check: `nix flake check` evaluates all test hosts in
+      # one process, which needs about 12 GB of memory
+      - run: |
+          nix eval --json .#checks.${{ matrix.system }} --apply builtins.attrNames \
+            | jq -r '.[]' \
+            | xargs -P 4 -I {} nix build --no-link --no-eval-cache -L '.#checks.${{ matrix.system }}.{}'
