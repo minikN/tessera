@@ -20,7 +20,7 @@ in
 hosts.checks
 // import ./features {
   inherit lib;
-  inherit (hosts) expect;
+  inherit (hosts) expect check;
 }
 // lib.mapAttrs' (name: lib.nameValuePair "ert-${name}") (
   import ./packages/emacs {
