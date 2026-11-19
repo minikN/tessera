@@ -166,7 +166,7 @@ mkFeature {
         description = "Wallpaper path. `null` falls back to a solid colour from `colors`";
       };
 
-      enableToggle = mkEnableOption "runtime light/dark switch";
+      enableToggle = mkEnableOption "runtime light/dark switch (NixOS only)";
     };
 
   nixos =
@@ -215,7 +215,8 @@ mkFeature {
         fi
       '';
     in
-    lib.mkIf cfg.enableToggle {
+    ## The toggle switches NixOS specialisations
+    lib.mkIf (cfg.enableToggle && config.globals.platform == "nixos") {
       home.packages = [ toggler ];
       xdg.desktopEntries.toggle-theme = {
         name = "Toggle Theme";
