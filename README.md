@@ -324,6 +324,24 @@ nix build .#nixosConfigurations.<host>.config.system.build.toplevel
 nix build .#homeConfigurations.<host>.activationPackage
 ```
 
+Tessera's own tests are in `tests/` and run as its flake checks:
+
+- **Hosts:** a bare host, one per feature with only that feature enabled,
+  and one with all features and all their boolean options that are off by
+  default turned on, each on NixOS and macOS, are evaluated (not
+  built); failed assertions and warnings fail them. Others check the
+  assertions and warnings of bad combinations.
+- **Packages:** ERT tests for each Emacs package in `packages/emacs/`, which is
+  also byte-compiled with warnings as errors.
+
+`nix flake check` evaluates all hosts in one process, which takes about
+12 GB of memory. CI builds each check on its own instead:
+
+```bash
+nix eval --json .#checks.<system> --apply builtins.attrNames | jq -r '.[]' \
+  | xargs -P 4 -I {} nix build --no-link --no-eval-cache -L '.#checks.<system>.{}'
+```
+
 ## License
 
 GPLv3 — see [LICENSE](./LICENSE).
