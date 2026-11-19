@@ -38,9 +38,14 @@ let
     config.globals.platform = platform;
   };
 
-  hostFeaturesModule = args: {
-    config.features = if builtins.isFunction hostFeatures then hostFeatures args else hostFeatures;
-  };
+  ## A function gets the module arguments it asks for, like `pkgs`
+  hostFeaturesModule =
+    if builtins.isFunction hostFeatures then
+      lib.setFunctionArgs (args: { config.features = hostFeatures args; }) (
+        builtins.functionArgs hostFeatures
+      )
+    else
+      { config.features = hostFeatures; };
 
   featureChecks =
     {
