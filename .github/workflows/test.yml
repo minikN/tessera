@@ -14,15 +14,16 @@ jobs:
         include:
           - os: ubuntu-latest
             system: x86_64-linux
+            skip: host-darwin-
           - os: macos-latest
             system: aarch64-darwin
+            skip: host-nixos-
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
       - uses: cachix/install-nix-action@v31
-      # One process per check: `nix flake check` evaluates all test hosts in
-      # one process, which needs about 12 GB of memory
+      # One process per check; each job evaluates on its own host checks
       - run: |
           nix eval --json .#checks.${{ matrix.system }} --apply builtins.attrNames \
-            | jq -r '.[]' \
+            | jq -r '.[] | select(startswith("${{ matrix.skip }}") | not)' \
             | xargs -P 4 -I {} nix build --no-link --no-eval-cache -L '.#checks.${{ matrix.system }}.{}'
