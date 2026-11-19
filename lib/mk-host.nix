@@ -5,28 +5,28 @@
   globals,
   features,
   name,
-  file,
+  ## The host file, or its contents as `host`
+  file ? null,
+  host ? import file,
 }:
 
 let
   inherit (lib) mkDefault;
 
-  hostDef = import file;
-
-  system = hostDef.system;
+  system = host.system;
   platform = if lib.strings.hasInfix "darwin" system then "darwin" else "nixos";
 
-  hostFeatures = hostDef.features or { };
-  hostNixos = hostDef.nixos or { };
-  hostDarwin = hostDef.darwin or { };
-  hostHome = hostDef.home or { };
+  hostFeatures = host.features or { };
+  hostNixos = host.nixos or { };
+  hostDarwin = host.darwin or { };
+  hostHome = host.home or { };
 
   hardwareModule = {
     imports = map (
       profile:
       inputs.nixos-hardware.nixosModules.${profile}
         or (throw "host ${name}: unknown hardware profile '${profile}'; see `tessera.lib.hardwareProfiles`")
-    ) (hostDef.hardware or [ ]);
+    ) (host.hardware or [ ]);
   };
 
   user = globals.user;
