@@ -149,10 +149,11 @@ mkFeature {
           let
             inherit (config.features.theme) scheme polarity;
           in
-          if scheme.${polarity} != null then
-            mkSchemeAttrs scheme.${polarity}
-          else
-            throw ''features.theme.scheme has no "${polarity}" variant, which polarity = "${polarity}" (or enableToggle) needs.'';
+          ## The default scheme stands in for a missing variant, which the
+          ## feature's assertions report
+          mkSchemeAttrs (
+            if scheme.${polarity} != null then scheme.${polarity} else rawSchemes.default.${polarity}
+          );
         defaultText = lib.literalExpression "config.features.theme.scheme.\${config.features.theme.polarity}";
         description = ''
           The colours in use. The `polarity` variant of `scheme` in plain hex.
@@ -176,6 +177,13 @@ mkFeature {
       otherPolarity = other cfg.polarity;
     in
     lib.mkIf cfg.enableToggle {
+      assertions = [
+        {
+          assertion = cfg.scheme.${otherPolarity} != null;
+          message = ''features.theme.scheme has no "${otherPolarity}" variant, which enableToggle needs.'';
+        }
+      ];
+
       security.sudo.extraRules = [
         {
           runAs = "root";
@@ -215,12 +223,23 @@ mkFeature {
         fi
       '';
     in
-    ## The toggle switches NixOS specialisations
-    lib.mkIf (cfg.enableToggle && config.globals.platform == "nixos") {
-      home.packages = [ toggler ];
-      xdg.desktopEntries.toggle-theme = {
-        name = "Toggle Theme";
-        exec = "${toggler}/bin/toggle-theme";
-      };
-    };
+    lib.mkMerge [
+      {
+        assertions = [
+          {
+            assertion = cfg.scheme.${cfg.polarity} != null;
+            message = ''features.theme.scheme has no "${cfg.polarity}" variant, which polarity = "${cfg.polarity}" needs.'';
+          }
+        ];
+      }
+
+      ## The toggle switches NixOS specialisations
+      (lib.mkIf (cfg.enableToggle && config.globals.platform == "nixos") {
+        home.packages = [ toggler ];
+        xdg.desktopEntries.toggle-theme = {
+          name = "Toggle Theme";
+          exec = "${toggler}/bin/toggle-theme";
+        };
+      })
+    ];
 }
