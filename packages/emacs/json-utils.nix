@@ -59,6 +59,21 @@ mkElispPackage pkgs emacsPackages {
             (substring (tessera-json-utils--text key) 1 -1)
           (tessera-json-utils--text key))))
 
+    (defun tessera-json-utils--jq-string (member)
+      "Return the key of MEMBER, a pair (JSON) or member (JSON5), as a jq string."
+      (let* ((key (or (treesit-node-child-by-field-name member "key")
+                      (treesit-node-child-by-field-name member "name")))
+             (text (tessera-json-utils--text key)))
+        (pcase (and (equal (treesit-node-type key) "string") (aref text 0))
+          (?\" text)
+          (?'
+           (concat "\""
+                   (replace-regexp-in-string
+                    "\\\\.\\|\"" (lambda (s) (pcase s ("\\'" "'") ("\"" "\\\"") (_ s)))
+                    (substring text 1 -1) t t)
+                   "\""))
+          (_ (format "%S" text)))))
+
     (defun tessera-json-utils--replace (beg end text)
       "Replace BEG..END with TEXT and indent it."
       (save-excursion
@@ -168,7 +183,7 @@ mkElispPackage pkgs emacsPackages {
              (let ((key (tessera-json-utils--key parent)))
                (push (if (string-match-p "\\`[[:alpha:]_][[:alnum:]_]*\\'" key)
                          (concat "." key)
-                       (format "[%S]" key))
+                       (concat "[" (tessera-json-utils--jq-string parent) "]"))
                      segments)))
             ("array" (push (format "[%d]" (seq-position (tessera-json-utils--elements parent)
                                                         node #'treesit-node-eq))
