@@ -10,8 +10,9 @@
 ## enabled, and one with all of them and all their boolean options that are
 ## off by default turned on, each on NixOS and macOS. The bare and
 ## all hosts are evaluated as standalone home-manager configurations too.
-## Failed assertions and warnings fail the check. `expect` lists the
-## assertions and warnings bad combinations must give.
+## Failed assertions and warnings fail the check. `frameworkChecks` check the
+## assertions `mkFeature` gives every feature; `expect` makes such checks for
+## `features/`, which has the feature-specific ones.
 let
   globals = {
     user = "user";
@@ -109,17 +110,17 @@ let
         test host ${name}:
         ${lib.concatMapStrings (p: "  - ${p}\n") problems}'';
 
-  ## A check that the host with `features` on `platform` fails each assertion
-  ## and gives each warning in `messages`. Assertions and warnings that fail
-  ## to evaluate on a bad host are skipped; messages are only read from failed
-  ## assertions.
-  expectCheck =
-    name:
+  ## A check named `name` that the host with `features` on `platform` fails
+  ## each assertion and gives each warning in `messages`. Assertions and
+  ## warnings that fail to evaluate on a bad host are skipped; messages are
+  ## only read from failed assertions.
+  expect =
     {
       platform,
       features,
       messages,
     }:
+    name:
     let
       inherit ((mkHost platform { inherit features; }).systemConfig.config) assertions warnings;
       failed =
@@ -143,52 +144,22 @@ let
         test host ${name}: expected
         ${lib.concatMapStrings (m: "  - ${m}\n") missing}'';
 
-  expect = {
-    bash-and-zsh = {
-      platform = "nixos";
-      features = {
-        bash.enable = true;
-        zsh.enable = true;
-      };
-      messages = [ "features.bash and features.zsh cannot both be enabled. Pick one." ];
-    };
-    parent-disabled = {
+  ## Assertions of every feature, with sway and aerospace as examples
+  frameworkChecks = {
+    parent-disabled = expect {
       platform = "darwin";
       features.emacs.eglot.enable = true;
       messages = [ "features.emacs.eglot requires features.emacs to be enabled." ];
     };
-    nixos-feature-on-darwin = {
+    nixos-feature-on-darwin = expect {
       platform = "darwin";
       features.sway.enable = true;
       messages = [ "features.sway is not available on macOS." ];
     };
-    darwin-feature-on-nixos = {
+    darwin-feature-on-nixos = expect {
       platform = "nixos";
       features.aerospace.enable = true;
       messages = [ "features.aerospace is not available on NixOS." ];
-    };
-    sway-global-bar-without-bar = {
-      platform = "nixos";
-      features.sway = {
-        enable = true;
-        useGlobalBar = true;
-      };
-      messages = [ "features.sway.useGlobalBar needs a bar in globals.apps.bar." ];
-    };
-    emacs-without-tree-sitter = {
-      platform = "darwin";
-      features =
-        { pkgs, ... }:
-        {
-          emacs.enable = true;
-          emacs.package = pkgs.emacs.override { withTreeSitter = false; };
-          javascript.enable = true;
-          json.enable = true;
-        };
-      messages = [
-        "features.javascript: features.emacs.package is built without tree-sitter"
-        "features.json: features.emacs.package is built without tree-sitter"
-      ];
     };
   };
 
@@ -240,6 +211,12 @@ let
       ) supported
     );
 in
-perPlatform "nixos"
-// perPlatform "darwin"
-// lib.mapAttrs' (name: e: lib.nameValuePair "expect-${name}" (expectCheck name e)) expect
+{
+  inherit expect;
+  checks =
+    perPlatform "nixos"
+    // perPlatform "darwin"
+    // lib.mapAttrs' (
+      name: check: lib.nameValuePair "expect-${name}" (check "expect-${name}")
+    ) frameworkChecks;
+}
