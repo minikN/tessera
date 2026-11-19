@@ -694,13 +694,15 @@ mkElispPackage pkgs emacsPackages {
 
     (defun tessera-javascript-utils--key (node)
       "Return the path segment of object key NODE."
-      (let ((name (pcase (treesit-node-type node)
-                    ("string" (string-trim (tessera-javascript-utils--text node) "[\"']" "[\"']"))
-                    ("computed_property_name" nil)
-                    (_ (tessera-javascript-utils--text node)))))
+      (let* ((text (tessera-javascript-utils--text node))
+             (name (pcase (treesit-node-type node)
+                     ("string" (substring text 1 -1))
+                     ("computed_property_name" nil)
+                     (_ text))))
         (cond
-         ((null name) (tessera-javascript-utils--text node))
+         ((null name) text)
          ((string-match-p "\\`[[:alpha:]_$][[:alnum:]_$]*\\'" name) (concat "." name))
+         ((equal (treesit-node-type node) "string") (concat "[" text "]"))
          (t (format "[%S]" name)))))
 
     (defun tessera-javascript-utils-print-path ()
