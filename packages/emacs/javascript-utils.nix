@@ -843,7 +843,8 @@ mkElispPackage pkgs emacsPackages {
              (command (apply #'tessera-javascript-utils--command tool action args))
              (dirs (alist-get tool tessera-javascript-utils-script-paths))
              (default-directory root)
-             (compilation-environment (cons "NO_COLOR=1" compilation-environment)))
+             ;; TERM=dumb for yarn 1, which ignores NO_COLOR, and npm's spinner
+             (compilation-environment (append '("NO_COLOR=1" "TERM=dumb") compilation-environment)))
         (compilation-start
          (if dirs
              (format "env PATH=%s:\"$PATH\" %s"
