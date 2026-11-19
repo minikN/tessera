@@ -708,8 +708,12 @@ mkElispPackage pkgs emacsPackages {
       (interactive)
       (let ((node (tessera-javascript-utils--node))
             segments)
-        (while (and node (not (tessera-javascript-utils--type-p
-                               (treesit-node-parent node) "\\`\\(pair\\|array\\)\\'")))
+        ;; Up to a value: a pair's key or value, or an array's element
+        (while (and node (let ((parent (treesit-node-parent node)))
+                           (not (pcase (treesit-node-type parent)
+                                  ("pair" t)
+                                  ("array" (seq-contains-p (tessera-javascript-utils--elements parent)
+                                                           node #'treesit-node-eq))))))
           (setq node (treesit-node-parent node)))
         (while-let ((parent (and node (treesit-node-parent node)))
                     ((tessera-javascript-utils--type-p parent "\\`\\(pair\\|array\\|object\\)\\'")))
