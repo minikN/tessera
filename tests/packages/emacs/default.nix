@@ -2,8 +2,9 @@
 
 ## Byte-compiles `pkgs.tessera.emacs.<name>` with warnings as errors (its
 ## build ignores them) and runs the ERT tests in `<name>.el` against it,
-## with `PATH` stripped to the system's own tools and once per shell in
-## `shells` as `shell-file-name`.
+## with `PATH` stripped to `/bin` and once per shell in `shells` as
+## `shell-file-name`. `/bin` has little more than `sh` on macOS and only
+## `sh` in the Linux build sandbox, so tools must be called by store path.
 let
   ert =
     name:
@@ -30,10 +31,9 @@ let
       ${emacs}/bin/emacs --batch --eval '(package-activate-all)' \
         --eval '(setq byte-compile-error-on-warn t)' \
         -f batch-byte-compile $TMPDIR/tessera-${name}.el
-      export PATH=/usr/bin:/bin
       ${lib.concatMapStrings (shell: ''
         echo "shell-file-name: ${shell}"
-        ${emacs}/bin/emacs --batch --eval '(package-activate-all)' \
+        PATH=/bin ${emacs}/bin/emacs --batch --eval '(package-activate-all)' \
           --eval '(setq shell-file-name "${shell}")' \
           -l ert -l ${./${name}.el} -f ert-run-tests-batch-and-exit
       '') shells}
