@@ -17,7 +17,8 @@ let
   };
   features = discover.discoverFeatures ../features helpers;
 
-  ## Tessera's own packages, from `packages/`, as `pkgs.tessera.<name>`
+  ## Tessera's own packages, from `packages/<category>/<name>.nix`, as
+  ## `pkgs.tessera.<category>.<name>`
   overlay = final: _prev: {
     tessera = lib.packagesFromDirectoryRecursive {
       callPackage = lib.callPackageWith (final // { inherit mkElispPackage; });

@@ -183,7 +183,7 @@ mkFeature {
           elispPackages =
             epkgs:
             lib.optional cfg.utils.enable (
-              pkgs.tessera.javascript-utils.override {
+              pkgs.tessera.emacs.javascript-utils.override {
                 emacsPackages = epkgs;
                 nodejs = cfg.packages.npm.package;
                 pnpm = cfg.packages.pnpm.package;
