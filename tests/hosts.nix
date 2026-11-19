@@ -11,8 +11,8 @@
 ## off by default turned on, each on NixOS and macOS. The bare and
 ## all hosts are evaluated as standalone home-manager configurations too.
 ## Failed assertions and warnings fail the check. `frameworkChecks` check the
-## assertions `mkFeature` gives every feature; `expect` makes such checks for
-## `features/`, which has the feature-specific ones.
+## assertions `mkFeature` gives every feature. `features/` has the
+## feature-specific checks, made with `expect` and `check`.
 let
   globals = {
     user = "user";
@@ -59,7 +59,7 @@ let
       inherit inputs globals;
       inherit (tessera) features;
       name = "test";
-      host = platforms.${platform}.host // host;
+      host = lib.recursiveUpdate platforms.${platform}.host host;
     };
 
   ## Messages of the failed assertions and the warnings of `config`
@@ -144,6 +144,36 @@ let
         test host ${name}: expected
         ${lib.concatMapStrings (m: "  - ${m}\n") missing}'';
 
+  ## A check named `name` that the host made of the other attributes (`features`
+  ## and `home`, `nixos` or `darwin` modules) on `platform` evaluates cleanly
+  ## and passes `assertions`: NixOS-style assertions about its system `config`
+  ## and the user's home-manager config `home`
+  check =
+    {
+      platform,
+      assertions,
+      ...
+    }@spec:
+    name:
+    let
+      host = removeAttrs spec [
+        "platform"
+        "assertions"
+      ];
+      inherit ((mkHost platform host).systemConfig) config;
+      failed = builtins.filter (a: !a.assertion) (assertions {
+        inherit config;
+        home = config.home-manager.users.${globals.user};
+      });
+      problems = problemsOf config ++ map (a: a.message) failed;
+    in
+    if problems == [ ] then
+      pkgs.runCommandLocal "test-${name}" { } "touch $out"
+    else
+      throw ''
+        test host ${name}:
+        ${lib.concatMapStrings (p: "  - ${p}\n") problems}'';
+
   ## Assertions of every feature, with sway and aerospace as examples
   frameworkChecks = {
     parent-disabled = expect {
@@ -212,7 +242,7 @@ let
     );
 in
 {
-  inherit expect;
+  inherit expect check;
   checks =
     perPlatform "nixos"
     // perPlatform "darwin"
