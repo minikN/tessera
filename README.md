@@ -331,7 +331,9 @@ Tessera's own tests are in `tests/` and run as its flake checks:
   and one with all features and all their boolean options that are off by
   default turned on, each on NixOS and macOS, are evaluated (not
   built); failed assertions and warnings fail them. Others check the
-  assertions and warnings of bad combinations.
+  assertions every feature gets.
+- **Features:** checks of a feature's own assertions and warnings, in
+  `tests/features/<category>/<feature>.nix`.
 - **Packages:** ERT tests for each Emacs package in `packages/emacs/`, which is
   also byte-compiled with warnings as errors.
 

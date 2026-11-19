@@ -8,14 +8,19 @@
 ## Tessera's tests, as `checks.<system>.*`
 let
   pkgs' = pkgs.extend tessera.overlay;
+  hosts = import ./hosts.nix {
+    inherit
+      lib
+      pkgs
+      tessera
+      inputs
+      ;
+  };
 in
-import ./hosts.nix {
-  inherit
-    lib
-    pkgs
-    tessera
-    inputs
-    ;
+hosts.checks
+// import ./features {
+  inherit lib;
+  inherit (hosts) expect;
 }
 // lib.mapAttrs' (name: lib.nameValuePair "ert-${name}") (
   import ./packages/emacs {
