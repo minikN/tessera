@@ -2,6 +2,7 @@
   pkgs,
   emacsPackages,
   mkElispPackage,
+  coreutils,
   nodejs,
   pnpm,
   yarn,
@@ -847,7 +848,7 @@ mkElispPackage pkgs emacsPackages {
              (compilation-environment (append '("NO_COLOR=1" "TERM=dumb") compilation-environment)))
         (compilation-start
          (if dirs
-             (format "env PATH=%s:\"$PATH\" %s"
+             (format "${coreutils}/bin/env PATH=%s:\"$PATH\" %s"
                      (mapconcat #'shell-quote-argument dirs ":") command)
            command)
          nil
