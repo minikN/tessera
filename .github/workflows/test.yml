@@ -22,6 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v17
+        with:
+          name: tessera
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       # One process per check; each job evaluates on its own host checks
       - run: |
           nix eval --json .#checks.${{ matrix.system }} --apply builtins.attrNames \
