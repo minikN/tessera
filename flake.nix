@@ -53,18 +53,26 @@
         ) (pkgs.extend lib.overlay).tessera
       );
 
-      checks = forAllSystems (pkgs: {
-        docs = lib.checkDocs {
-          inherit pkgs;
-          inherit (lib) features;
-        };
+      checks = forAllSystems (
+        pkgs:
+        {
+          docs = lib.checkDocs {
+            inherit pkgs;
+            inherit (lib) features;
+          };
 
-        formatting = pkgs.runCommandLocal "formatting-check" { nativeBuildInputs = [ pkgs.nixfmt ]; } ''
-          cd ${./.}
-          find . -name '*.nix' -exec nixfmt --check {} +
-          touch $out
-        '';
-      });
+          formatting = pkgs.runCommandLocal "formatting-check" { nativeBuildInputs = [ pkgs.nixfmt ]; } ''
+            cd ${./.}
+            find . -name '*.nix' -exec nixfmt --check {} +
+            touch $out
+          '';
+        }
+        // import ./tests {
+          inherit (inputs.nixpkgs) lib;
+          inherit pkgs inputs;
+          tessera = lib;
+        }
+      );
 
       formatter = forAllSystems (pkgs: pkgs.nixfmt-tree);
     };
