@@ -110,8 +110,9 @@ let
         ${lib.concatMapStrings (p: "  - ${p}\n") problems}'';
 
   ## A check that the host with `features` on `platform` fails each assertion
-  ## and gives each warning in `messages`. Assertions that fail to evaluate on
-  ## a bad host are skipped; messages are only read from failed assertions.
+  ## and gives each warning in `messages`. Assertions and warnings that fail
+  ## to evaluate on a bad host are skipped; messages are only read from failed
+  ## assertions.
   expectCheck =
     name:
     {
@@ -127,10 +128,12 @@ let
           success = true;
           value = false;
         };
+      ## Warnings too may fail to evaluate on a bad host
+      warnings' = builtins.tryEval (builtins.deepSeq warnings warnings);
       given =
         m:
         builtins.any (a: failed a && lib.hasInfix m a.message) assertions
-        || builtins.any (lib.hasInfix m) warnings;
+        || warnings'.success && builtins.any (lib.hasInfix m) warnings'.value;
       missing = builtins.filter (m: !given m) messages;
     in
     if missing == [ ] then
