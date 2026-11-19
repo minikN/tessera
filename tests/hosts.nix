@@ -157,12 +157,12 @@ let
       features.emacs.eglot.enable = true;
       messages = [ "features.emacs.eglot requires features.emacs to be enabled." ];
     };
-    sway-on-macos = {
+    nixos-feature-on-darwin = {
       platform = "darwin";
       features.sway.enable = true;
       messages = [ "features.sway is not available on macOS." ];
     };
-    aerospace-on-nixos = {
+    darwin-feature-on-nixos = {
       platform = "nixos";
       features.aerospace.enable = true;
       messages = [ "features.aerospace is not available on NixOS." ];
