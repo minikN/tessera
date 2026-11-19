@@ -154,8 +154,12 @@ mkElispPackage pkgs emacsPackages {
       (interactive)
       (let ((node (tessera-json-utils--node))
             segments)
-        (while (and node (not (tessera-json-utils--type-p
-                               (treesit-node-parent node) "\\`\\(pair\\|member\\|array\\)\\'")))
+        ;; Up to a value: a member's key or value, or an array's element
+        (while (and node (let ((parent (treesit-node-parent node)))
+                           (not (pcase (treesit-node-type parent)
+                                  ((or "pair" "member") t)
+                                  ("array" (seq-contains-p (tessera-json-utils--elements parent)
+                                                           node #'treesit-node-eq))))))
           (setq node (treesit-node-parent node)))
         (while-let ((parent (and node (treesit-node-parent node)))
                     ((tessera-json-utils--type-p parent "\\`\\(pair\\|member\\|array\\|object\\)\\'")))
