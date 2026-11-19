@@ -157,6 +157,13 @@ mkFeature {
       kbd = keyboard.layout;
     in
     {
+      assertions = [
+        {
+          assertion = !cfg.useGlobalBar || apps.bar != null;
+          message = "features.sway.useGlobalBar needs a bar in globals.apps.bar.";
+        }
+      ];
+
       programs.swayr = {
         enable = true;
         systemd.enable = true;
