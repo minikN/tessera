@@ -46,7 +46,11 @@
             sourceUrl = "https://github.com/minikN/tessera/blob/main";
           };
         }
-        // (pkgs.extend lib.overlay).tessera
+        ## `pkgs.tessera.<category>.<name>` as `<category>-<name>`
+        // inputs.nixpkgs.lib.concatMapAttrs (
+          category:
+          inputs.nixpkgs.lib.mapAttrs' (name: inputs.nixpkgs.lib.nameValuePair "${category}-${name}")
+        ) (pkgs.extend lib.overlay).tessera
       );
 
       checks = forAllSystems (pkgs: {

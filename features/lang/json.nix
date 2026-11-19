@@ -168,7 +168,7 @@ mkFeature {
                   ]
                 ))
               ]
-              ++ lib.optional cfg.utils.enable (pkgs.tessera.json-utils.override { emacsPackages = epkgs; })
+              ++ lib.optional cfg.utils.enable (pkgs.tessera.emacs.json-utils.override { emacsPackages = epkgs; })
             );
 
           config = ''
