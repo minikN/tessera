@@ -191,6 +191,26 @@ let
       features.aerospace.enable = true;
       messages = [ "features.aerospace is not available on NixOS." ];
     };
+    server-without-home-manager =
+      name:
+      let
+        host = tessera.mkHost {
+          inherit inputs;
+          inherit (tessera) features;
+          name = "test";
+          host = lib.recursiveUpdate platforms.nixos.host {
+            homeManager = false;
+            features = {
+              home.enable = false;
+              user.enable = false;
+            };
+            nixos.system.stateVersion = "26.05";
+          };
+        };
+      in
+      assert host.homeConfig == null;
+      assert !(host.systemConfig.config ? home-manager);
+      evalCheck name (partsOf host false);
   };
 
   perPlatform =
