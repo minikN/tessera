@@ -2,7 +2,7 @@
 
 {
   inputs,
-  globals,
+  globals ? { },
   features,
   name,
   ## The host file, or its contents as `host`
@@ -20,6 +20,7 @@ let
   hostNixos = host.nixos or { };
   hostDarwin = host.darwin or { };
   hostHome = host.home or { };
+  homeManager = host.homeManager or true;
 
   hardwareModule = {
     imports = map (
@@ -90,9 +91,9 @@ let
       nixpkgs.config.allowUnfree = true;
       nixpkgs.overlays = [ overlay ];
     }
-    systemHomeManagerModule
     featureChecks
   ]
+  ++ lib.optional homeManager systemHomeManagerModule
   ++ commonFeatureModules
   ++ (if platform == "nixos" then nixosFeatureModules else darwinFeatureModules)
   ++ (
@@ -110,38 +111,41 @@ let
       inputs.nixpkgs.lib.nixosSystem {
         inherit system;
         specialArgs = { inherit inputs globals; };
-        modules = [
-          inputs.home-manager.nixosModules.home-manager
-          { system.stateVersion = mkDefault globals.stateVersion; }
-        ]
-        ++ systemModules;
+        modules =
+          lib.optional homeManager inputs.home-manager.nixosModules.home-manager
+          ++ lib.optional (globals ? stateVersion) { system.stateVersion = mkDefault globals.stateVersion; }
+          ++ systemModules;
       }
     else
       inputs.darwin.lib.darwinSystem {
         inherit system;
         specialArgs = { inherit inputs globals; };
-        modules = [
-          inputs.home-manager.darwinModules.home-manager
-          { system.stateVersion = mkDefault 6; }
-        ]
-        ++ systemModules;
+        modules =
+          lib.optional homeManager inputs.home-manager.darwinModules.home-manager
+          ++ [ { system.stateVersion = mkDefault 6; } ]
+          ++ systemModules;
       };
 
-  homeConfig = inputs.home-manager.lib.homeManagerConfiguration {
-    pkgs = import inputs.nixpkgs {
-      inherit system;
-      config.allowUnfree = true;
-      overlays = [ overlay ];
-    };
-    extraSpecialArgs = { inherit inputs globals; };
-    modules = homeModules;
-  };
+  homeConfig =
+    if homeManager then
+      inputs.home-manager.lib.homeManagerConfiguration {
+        pkgs = import inputs.nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+          overlays = [ overlay ];
+        };
+        extraSpecialArgs = { inherit inputs globals; };
+        modules = homeModules;
+      }
+    else
+      null;
 in
 {
   inherit
     name
     platform
     system
+    homeManager
     systemConfig
     homeConfig
     ;

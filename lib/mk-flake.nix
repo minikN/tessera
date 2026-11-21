@@ -11,7 +11,7 @@
 ## Build every host in `hosts` from tessera's features plus the user's own.
 {
   inputs ? { },
-  globals,
+  globals ? { },
   hosts,
   features ? null,
 }:
@@ -41,5 +41,7 @@ in
 {
   nixosConfigurations = onPlatform "nixos";
   darwinConfigurations = onPlatform "darwin";
-  homeConfigurations = lib.mapAttrs (_: v: v.homeConfig) builtHosts;
+  homeConfigurations = lib.mapAttrs (_: v: v.homeConfig) (
+    lib.filterAttrs (_: v: v.homeManager) builtHosts
+  );
 }
