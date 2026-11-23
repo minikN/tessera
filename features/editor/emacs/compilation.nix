@@ -35,15 +35,16 @@ mkFeature {
       name = "tessera-compilation";
       summary = "Compilation buffers that show tool output as in a terminal";
 
-      config = ''
-        (setopt compilation-max-output-line-length nil
-                compilation-scroll-output t
-                compilation-ask-about-save nil
-                project-compilation-buffer-name-function #'project-prefixed-buffer-name
-                comint-scroll-to-bottom-on-input t
-                comint-scroll-to-bottom-on-output t)
+      config = # elisp
+        ''
+          (setopt compilation-max-output-line-length nil
+                  compilation-scroll-output t
+                  compilation-ask-about-save nil
+                  project-compilation-buffer-name-function #'project-prefixed-buffer-name
+                  comint-scroll-to-bottom-on-input t
+                  comint-scroll-to-bottom-on-output t)
 
-        (add-hook 'compilation-filter-hook #'ansi-color-compilation-filter)
-      '';
+          (add-hook 'compilation-filter-hook #'ansi-color-compilation-filter)
+        '';
     };
 }

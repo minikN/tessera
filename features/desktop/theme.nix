@@ -213,15 +213,17 @@ mkFeature {
     let
       cfg = config.features.theme;
       otherPolarity = other cfg.polarity;
-      toggler = pkgs.writeShellScriptBin "toggle-theme" ''
-        current=$(readlink /run/current-system)
-        specialisation=$(readlink /nix/var/nix/profiles/system/specialisation/${otherPolarity})
-        if [ "$current" = "$specialisation" ] || [ -z "$specialisation" ]; then
-          sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch
-        else
-          sudo /nix/var/nix/profiles/system/specialisation/${otherPolarity}/bin/switch-to-configuration switch
-        fi
-      '';
+      toggler =
+        pkgs.writeShellScriptBin "toggle-theme" # bash
+          ''
+            current=$(readlink /run/current-system)
+            specialisation=$(readlink /nix/var/nix/profiles/system/specialisation/${otherPolarity})
+            if [ "$current" = "$specialisation" ] || [ -z "$specialisation" ]; then
+              sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch
+            else
+              sudo /nix/var/nix/profiles/system/specialisation/${otherPolarity}/bin/switch-to-configuration switch
+            fi
+          '';
     in
     lib.mkMerge [
       {

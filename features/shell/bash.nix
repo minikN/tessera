@@ -66,10 +66,11 @@ mkFeature {
         enable = true;
         historyFile = "${config.xdg.stateHome}/bash/history";
         profileExtra = config.features.bash.extraConfig;
-        bashrcExtra = ''
-          [[ $- == *i* && -r ${pkgs.bash-completion}/etc/profile.d/bash_completion.sh ]] && \
-            source ${pkgs.bash-completion}/etc/profile.d/bash_completion.sh
-        '';
+        bashrcExtra = # bash
+          ''
+            [[ $- == *i* && -r ${pkgs.bash-completion}/etc/profile.d/bash_completion.sh ]] && \
+              source ${pkgs.bash-completion}/etc/profile.d/bash_completion.sh
+          '';
       };
 
       programs.readline = lib.mkIf (config.features.bash.keybindings != { }) {

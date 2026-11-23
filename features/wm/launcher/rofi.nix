@@ -196,16 +196,19 @@ mkFeature {
     let
       cfg = config.features.rofi;
       pass = config.features.password-store.package;
-      env = ''
-        ${lib.optionalString config.features.password-store.enable ''export PASSWORD_STORE_DIR="${config.features.password-store.storeDir}"''}
-        ${lib.optionalString config.features.gnupg.enable ''export GNUPGHOME="${config.features.gnupg.storeDir}"''}
-      '';
+      env = # bash
+        ''
+          ${lib.optionalString config.features.password-store.enable ''export PASSWORD_STORE_DIR="${config.features.password-store.storeDir}"''}
+          ${lib.optionalString config.features.gnupg.enable ''export GNUPGHOME="${config.features.gnupg.storeDir}"''}
+        '';
 
-      waylandPass = pkgs.writeShellScriptBin "tessen" ''
-        ${env}
-        export PATH="${lib.makeBinPath [ cfg.package ]}:$PATH"
-        exec ${pkgs.tessen.override { inherit pass; }}/bin/tessen --pass pass --dmenu rofi "$@"
-      '';
+      waylandPass =
+        pkgs.writeShellScriptBin "tessen" # bash
+          ''
+            ${env}
+            export PATH="${lib.makeBinPath [ cfg.package ]}:$PATH"
+            exec ${pkgs.tessen.override { inherit pass; }}/bin/tessen --pass pass --dmenu rofi "$@"
+          '';
 
       x11Pass = pkgs.writeShellApplication {
         name = "rofi-pass";
@@ -218,25 +221,26 @@ mkFeature {
           gnused
           coreutils
         ];
-        text = ''
-          ${env}
-          menu () { rofi -dmenu -i -no-auto-select -p "$1"; }
-          field () {
-            pass show "$entry" | grep -iE "^($1):" | head -n1 | sed 's/^[^:]*:[[:space:]]*//' || true
-          }
+        text = # bash
+          ''
+            ${env}
+            menu () { rofi -dmenu -i -no-auto-select -p "$1"; }
+            field () {
+              pass show "$entry" | grep -iE "^($1):" | head -n1 | sed 's/^[^:]*:[[:space:]]*//' || true
+            }
 
-          entry=$(cd "$PASSWORD_STORE_DIR" && find . -type f -name '*.gpg' \
-            | sed -e 's|^\./||' -e 's/\.gpg$//' | sort | menu pass) || exit 0
-          action=$(printf '%s\n' 'Copy password' 'Copy username' 'Copy URL' 'Copy OTP' \
-            | menu "$entry") || exit 0
+            entry=$(cd "$PASSWORD_STORE_DIR" && find . -type f -name '*.gpg' \
+              | sed -e 's|^\./||' -e 's/\.gpg$//' | sort | menu pass) || exit 0
+            action=$(printf '%s\n' 'Copy password' 'Copy username' 'Copy URL' 'Copy OTP' \
+              | menu "$entry") || exit 0
 
-          case "$action" in
-            'Copy password') pass show -c "$entry" ;;
-            'Copy username') field 'username|user|login' | xclip -selection clipboard ;;
-            'Copy URL')      field 'url|website|site' | xclip -selection clipboard ;;
-            'Copy OTP')      pass otp -c "$entry" ;;
-          esac
-        '';
+            case "$action" in
+              'Copy password') pass show -c "$entry" ;;
+              'Copy username') field 'username|user|login' | xclip -selection clipboard ;;
+              'Copy URL')      field 'url|website|site' | xclip -selection clipboard ;;
+              'Copy OTP')      pass otp -c "$entry" ;;
+            esac
+          '';
       };
     in
     {

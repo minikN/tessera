@@ -31,10 +31,11 @@ mkFeature {
     lib.mkMerge [
       { home.packages = [ docs.man ]; }
       (lib.mkIf config.features.emacs.enable {
-        programs.emacs.extraConfig = ''
-          (with-eval-after-load 'info
-            (add-to-list 'Info-additional-directory-list "${docs.info}/share/info"))
-        '';
+        programs.emacs.extraConfig = # elisp
+          ''
+            (with-eval-after-load 'info
+              (add-to-list 'Info-additional-directory-list "${docs.info}/share/info"))
+          '';
       })
     ];
 }

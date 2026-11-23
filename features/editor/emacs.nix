@@ -83,10 +83,11 @@ mkFeature {
           client.enable = true;
         };
 
-        xdg.configFile."emacs/early-init.el".text = ''
-          ;;; early-init.el -*- lexical-binding: t -*-
-          ${cfg.earlyInit}
-        '';
+        xdg.configFile."emacs/early-init.el".text = # elisp
+          ''
+            ;;; early-init.el -*- lexical-binding: t -*-
+            ${cfg.earlyInit}
+          '';
 
         ## Emacs won't create these itself
         home.activation.createEmacsStateDirs =
@@ -99,93 +100,95 @@ mkFeature {
         summary = "Base Emacs configuration";
         elispPackages = epkgs: [ epkgs.wgrep ] ++ lib.optional isDarwin epkgs.exec-path-from-shell;
 
-        earlyInit = ''
-          ;; Defer GC while starting up; restore a sane threshold afterwards.
-          (setq gc-cons-threshold most-positive-fixnum
-                gc-cons-percentage 0.6)
-          (add-hook 'emacs-startup-hook
-                    (lambda ()
-                      (setq gc-cons-threshold (* 16 1024 1024)
-                            gc-cons-percentage 0.1)))
-          ;; Packages are native-compiled ahead of time by nix.
-          (setq native-comp-jit-compilation nil)
-          (advice-add 'x-apply-session-resources :override #'ignore)
-        '';
+        earlyInit = # elisp
+          ''
+            ;; Defer GC while starting up; restore a sane threshold afterwards.
+            (setq gc-cons-threshold most-positive-fixnum
+                  gc-cons-percentage 0.6)
+            (add-hook 'emacs-startup-hook
+                      (lambda ()
+                        (setq gc-cons-threshold (* 16 1024 1024)
+                              gc-cons-percentage 0.1)))
+            ;; Packages are native-compiled ahead of time by nix.
+            (setq native-comp-jit-compilation nil)
+            (advice-add 'x-apply-session-resources :override #'ignore)
+          '';
 
-        config = ''
-          (defgroup tessera nil
-            "Tessera Emacs configuration."
-            :group 'external
-            :prefix "tessera-")
+        config = # elisp
+          ''
+            (defgroup tessera nil
+              "Tessera Emacs configuration."
+              :group 'external
+              :prefix "tessera-")
 
-          ${optionalString user.enable ''
-            (setq user-full-name "${user.fullName}"
-                  user-mail-address "${user.email}")
-          ''}
-          (setopt custom-file "${stateDir}/custom.el")
-          (load custom-file t)
-          (setopt backup-directory-alist '(("." . "${stateDir}/backup"))
-                  bookmark-default-file "${stateDir}/bookmarks"
-                  save-place-file "${stateDir}/places"
-                  recentf-save-file "${stateDir}/recentf"
-                  savehist-file "${stateDir}/history"
-                  auto-save-list-file-prefix "${stateDir}/auto-save/.saves-")
-          (setq auto-save-file-name-transforms '((".*" "${stateDir}/auto-save/" t))
-                lock-file-name-transforms '((".*" "${stateDir}/lock/" t)))
-
-          (setopt which-key-min-display-lines 5)
-
-          (save-place-mode 1)
-          (recentf-mode 1)
-          (run-with-idle-timer 30 t #'recentf-save-list)
-          (setopt history-length 10000)
-          (savehist-mode 1)
-
-          (setopt warning-minimum-level :error
-                  undo-limit (* 8 1024 1024)
-                  read-process-output-max (* 1024 1024)
-                  save-interprogram-paste-before-kill t
-                  mouse-yank-at-point t
-                  require-final-newline t
-                  what-cursor-show-names t
-                  scroll-conservatively 100
-                  global-auto-revert-non-file-buffers t
-                  use-short-answers t)
-          (setq-default indent-tabs-mode nil)
-          (global-subword-mode 1)
-          (global-auto-revert-mode 1)
-          (repeat-mode 1)
-          (pixel-scroll-precision-mode 1)
-
-          (setopt copyright-names-regexp
-                  (regexp-quote (format "%s <%s>" user-full-name user-mail-address)))
-          (add-hook 'before-save-hook #'copyright-update)
-          (add-hook 'before-save-hook #'delete-trailing-whitespace)
-
-          (keymap-global-set "M-K" #'kill-whole-line)
-          (keymap-global-set "M-c" #'capitalize-dwim)
-          (keymap-global-set "M-l" #'downcase-dwim)
-          (keymap-global-set "M-u" #'upcase-dwim)
-
-          (with-eval-after-load 'mwheel
-            (setopt mouse-wheel-scroll-amount '(1 ((shift) . 1) ((control) . 1))
-                    mouse-wheel-progressive-speed nil
-                    mouse-wheel-follow-mouse t))
-
-          ${optionalString (shell != null) ''
-            (setopt explicit-shell-file-name "${shell}")
-          ''}
-          ${optionalString isDarwin ''
-            (require 'exec-path-from-shell)
-            ${optionalString (shell != null) ''
-              (setopt exec-path-from-shell-shell-name "${shell}")
+            ${optionalString user.enable ''
+              (setq user-full-name "${user.fullName}"
+                    user-mail-address "${user.email}")
             ''}
-            (setopt exec-path-from-shell-variables
-                    '(${lib.concatMapStringsSep " " (v: ''"${v}"'') shellEnvVars}))
-            (unless noninteractive
-              (exec-path-from-shell-initialize))
-          ''}
-        '';
+            (setopt custom-file "${stateDir}/custom.el")
+            (load custom-file t)
+            (setopt backup-directory-alist '(("." . "${stateDir}/backup"))
+                    bookmark-default-file "${stateDir}/bookmarks"
+                    save-place-file "${stateDir}/places"
+                    recentf-save-file "${stateDir}/recentf"
+                    savehist-file "${stateDir}/history"
+                    auto-save-list-file-prefix "${stateDir}/auto-save/.saves-")
+            (setq auto-save-file-name-transforms '((".*" "${stateDir}/auto-save/" t))
+                  lock-file-name-transforms '((".*" "${stateDir}/lock/" t)))
+
+            (setopt which-key-min-display-lines 5)
+
+            (save-place-mode 1)
+            (recentf-mode 1)
+            (run-with-idle-timer 30 t #'recentf-save-list)
+            (setopt history-length 10000)
+            (savehist-mode 1)
+
+            (setopt warning-minimum-level :error
+                    undo-limit (* 8 1024 1024)
+                    read-process-output-max (* 1024 1024)
+                    save-interprogram-paste-before-kill t
+                    mouse-yank-at-point t
+                    require-final-newline t
+                    what-cursor-show-names t
+                    scroll-conservatively 100
+                    global-auto-revert-non-file-buffers t
+                    use-short-answers t)
+            (setq-default indent-tabs-mode nil)
+            (global-subword-mode 1)
+            (global-auto-revert-mode 1)
+            (repeat-mode 1)
+            (pixel-scroll-precision-mode 1)
+
+            (setopt copyright-names-regexp
+                    (regexp-quote (format "%s <%s>" user-full-name user-mail-address)))
+            (add-hook 'before-save-hook #'copyright-update)
+            (add-hook 'before-save-hook #'delete-trailing-whitespace)
+
+            (keymap-global-set "M-K" #'kill-whole-line)
+            (keymap-global-set "M-c" #'capitalize-dwim)
+            (keymap-global-set "M-l" #'downcase-dwim)
+            (keymap-global-set "M-u" #'upcase-dwim)
+
+            (with-eval-after-load 'mwheel
+              (setopt mouse-wheel-scroll-amount '(1 ((shift) . 1) ((control) . 1))
+                      mouse-wheel-progressive-speed nil
+                      mouse-wheel-follow-mouse t))
+
+            ${optionalString (shell != null) ''
+              (setopt explicit-shell-file-name "${shell}")
+            ''}
+            ${optionalString isDarwin ''
+              (require 'exec-path-from-shell)
+              ${optionalString (shell != null) ''
+                (setopt exec-path-from-shell-shell-name "${shell}")
+              ''}
+              (setopt exec-path-from-shell-variables
+                      '(${lib.concatMapStringsSep " " (v: ''"${v}"'') shellEnvVars}))
+              (unless noninteractive
+                (exec-path-from-shell-initialize))
+            ''}
+          '';
       })
     ];
 }

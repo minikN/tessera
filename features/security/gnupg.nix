@@ -101,14 +101,16 @@ mkFeature {
       }
 
       (lib.mkIf (config.globals.platform == "darwin") {
-        home.activation.pinentryKeychain = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-          $DRY_RUN_CMD /usr/bin/defaults write org.gpgtools.pinentry-mac UseKeychain -bool ${
-            if cfg.keychainInteraction then "YES" else "NO"
-          }
-          $DRY_RUN_CMD /usr/bin/defaults write org.gpgtools.pinentry-mac DisableKeychain -bool ${
-            if cfg.keychainInteraction then "NO" else "YES"
-          }
-        '';
+        home.activation.pinentryKeychain =
+          lib.hm.dag.entryAfter [ "writeBoundary" ] # bash
+            ''
+              $DRY_RUN_CMD /usr/bin/defaults write org.gpgtools.pinentry-mac UseKeychain -bool ${
+                if cfg.keychainInteraction then "YES" else "NO"
+              }
+              $DRY_RUN_CMD /usr/bin/defaults write org.gpgtools.pinentry-mac DisableKeychain -bool ${
+                if cfg.keychainInteraction then "NO" else "YES"
+              }
+            '';
       })
     ];
 }

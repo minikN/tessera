@@ -8,12 +8,14 @@ pkgs: epkgs:
   packageRequires ? [ ],
 }:
 let
-  elFile = pkgs.writeText "${name}.el" ''
-    ;;; ${name}.el --- ${summary} -*- lexical-binding: t -*-
+  elFile =
+    pkgs.writeText "${name}.el" # elisp
+      ''
+        ;;; ${name}.el --- ${summary} -*- lexical-binding: t -*-
 
-    ${config}
-    (provide '${name})
-  '';
+        ${config}
+        (provide '${name})
+      '';
 in
 epkgs.melpaBuild {
   pname = name;

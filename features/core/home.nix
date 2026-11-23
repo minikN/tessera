@@ -65,9 +65,11 @@ mkFeature {
       environment.shells = mkIf (shell != null) [ shell ];
       users.users = mkIf (user.enable && shell != null) { ${user.username}.shell = shell; };
 
-      environment.loginShellInit = mkIf (tty != null && wm != null) ''
-        [[ $(tty) == ${tty} ]] && exec ${wm}
-      '';
+      environment.loginShellInit =
+        mkIf (tty != null && wm != null) # bash
+          ''
+            [[ $(tty) == ${tty} ]] && exec ${wm}
+          '';
     };
 
   darwin =
@@ -94,9 +96,10 @@ mkFeature {
           ];
           serviceConfig.RunAtLoad = true;
           serviceConfig.UserName = "root";
-          script = ''
-            chsh -s ${if shell != null then shell else "/bin/zsh"} ${user.username}
-          '';
+          script = # bash
+            ''
+              chsh -s ${if shell != null then shell else "/bin/zsh"} ${user.username}
+            '';
         };
       })
     ];
@@ -126,16 +129,18 @@ mkFeature {
             RunAtLoad = true;
             ProgramArguments =
               let
-                script = pkgs.writeShellScript "session-environment" ''
-                  export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-                  [ -r /etc/profile ]    && . /etc/profile
-                  [ -r "$HOME/.profile" ] && . "$HOME/.profile"
-                  launchctl setenv PATH "$PATH"
+                script =
+                  pkgs.writeShellScript "session-environment" # bash
+                    ''
+                      export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+                      [ -r /etc/profile ]    && . /etc/profile
+                      [ -r "$HOME/.profile" ] && . "$HOME/.profile"
+                      launchctl setenv PATH "$PATH"
 
-                  ${lib.concatStringsSep "\n" (
-                    lib.mapAttrsToList (n: v: "launchctl setenv ${n} \"${v}\"") config.home.sessionVariables
-                  )}
-                '';
+                      ${lib.concatStringsSep "\n" (
+                        lib.mapAttrsToList (n: v: "launchctl setenv ${n} \"${v}\"") config.home.sessionVariables
+                      )}
+                    '';
               in
               [ "${script}" ];
           };

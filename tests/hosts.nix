@@ -102,9 +102,10 @@ let
       drvPaths = lib.mapAttrsToList (_: p: builtins.unsafeDiscardStringContext p.drv.drvPath) parts;
     in
     if problems == [ ] then
-      pkgs.runCommandLocal "test-${name}" { } ''
-        printf '%s\n' ${lib.escapeShellArgs drvPaths} > $out
-      ''
+      pkgs.runCommandLocal "test-${name}" { } # bash
+        ''
+          printf '%s\n' ${lib.escapeShellArgs drvPaths} > $out
+        ''
     else
       throw ''
         test host ${name}:

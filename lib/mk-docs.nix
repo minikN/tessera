@@ -148,6 +148,7 @@ let
       ++ lib.optional (o ? example) "**Example:** ${formatValue o.example}";
       appendDetail = text: detail: text + (if lib.hasSuffix "```" text then "\n\n" else "\\\n") + detail;
     in
+    # markdown
     ''
       ### `${o.name}`
 
@@ -163,6 +164,7 @@ let
       platforms = supportedPlatformsOf f;
       optionalSection = heading: text: optionalString (text != null) "## ${heading}\n\n${text}\n";
     in
+    # markdown
     ''
       # ${featureNameOf f}
 
@@ -191,7 +193,8 @@ let
   ## features grouped by category
   featuresByCategory = lib.groupBy categoryOf documentedFeatures;
 
-  tableOfContents = ''
+  tableOfContents = # markdown
+  ''
     # Summary
 
     [Introduction](README.md)
@@ -205,11 +208,12 @@ let
     ) featuresByCategory
   );
 
-  bookToml = ''
-    [book]
-    title = "tessera"
-    src = "src"
-  '';
+  bookToml = # toml
+    ''
+      [book]
+      title = "tessera"
+      src = "src"
+    '';
 
   bookDir = pkgs.linkFarm "tessera-docs-src" (
     [
@@ -256,140 +260,150 @@ let
 
   ## Remove the README's badges (linked images) from the man page and the
   ## Info manual.
-  dropBadgesFilter = pkgs.writeText "drop-badges.lua" ''
-    function Para(p)
-      for _, el in ipairs(p.content) do
-        local isBadge = el.t == "Link" and #el.content == 1 and el.content[1].t == "Image"
-        if not (isBadge or el.t == "Space" or el.t == "SoftBreak") then
-          return nil
+  dropBadgesFilter =
+    pkgs.writeText "drop-badges.lua" # lua
+      ''
+        function Para(p)
+          for _, el in ipairs(p.content) do
+            local isBadge = el.t == "Link" and #el.content == 1 and el.content[1].t == "Image"
+            if not (isBadge or el.t == "Space" or el.t == "SoftBreak") then
+              return nil
+            end
+          end
+          return {}
         end
-      end
-      return {}
-    end
-  '';
+      '';
 
   ## Applying man page specific changes to the md document.
   ## Changes:
   ## - uppercase headings
   ## - strip urls from links (leaving only text)
   ## - remove unnecessary blank lines
-  manPageFilter = pkgs.writeText "man-filter.lua" ''
-    function Header(h)
-      if h.level == 1 then
-        h.content = pandoc.text.upper(pandoc.utils.stringify(h.content))
-        return h
-      elseif h.level == 3 or h.level > 4 then
-        return pandoc.Para({ pandoc.Strong(h.content) })
-      end
-    end
-
-    function Table(t)
-      return t:walk({
-        Link = function(l)
-          return l.content
-        end,
-      })
-    end
-
-    local function isTightList(b)
-      if b.t ~= "BulletList" and b.t ~= "OrderedList" then
-        return false
-      end
-      for _, item in ipairs(b.content) do
-        if item[1] and item[1].t == "Para" then
-          return false
+  manPageFilter =
+    pkgs.writeText "man-filter.lua" # lua
+      ''
+        function Header(h)
+          if h.level == 1 then
+            h.content = pandoc.text.upper(pandoc.utils.stringify(h.content))
+            return h
+          elseif h.level == 3 or h.level > 4 then
+            return pandoc.Para({ pandoc.Strong(h.content) })
+          end
         end
-      end
-      return true
-    end
 
-    function Pandoc(doc)
-      local blocks = {}
-      local function add(b)
-        table.insert(blocks, b)
-      end
-      local i = 1
-      while i <= #doc.blocks do
-        local b = doc.blocks[i]
-        i = i + 1
-        if b.t == "Header" and b.level == 4 then
-          local body = {}
-          while i <= #doc.blocks and doc.blocks[i].t ~= "Header" and doc.blocks[i].t ~= "HorizontalRule" do
-            table.insert(body, doc.blocks[i])
+        function Table(t)
+          return t:walk({
+            Link = function(l)
+              return l.content
+            end,
+          })
+        end
+
+        local function isTightList(b)
+          if b.t ~= "BulletList" and b.t ~= "OrderedList" then
+            return false
+          end
+          for _, item in ipairs(b.content) do
+            if item[1] and item[1].t == "Para" then
+              return false
+            end
+          end
+          return true
+        end
+
+        function Pandoc(doc)
+          local blocks = {}
+          local function add(b)
+            table.insert(blocks, b)
+          end
+          local i = 1
+          while i <= #doc.blocks do
+            local b = doc.blocks[i]
             i = i + 1
+            if b.t == "Header" and b.level == 4 then
+              local body = {}
+              while i <= #doc.blocks and doc.blocks[i].t ~= "Header" and doc.blocks[i].t ~= "HorizontalRule" do
+                table.insert(body, doc.blocks[i])
+                i = i + 1
+              end
+              add(pandoc.DefinitionList({ { { pandoc.Strong(b.content) }, { body } } }))
+            elseif isTightList(b) then
+              -- keep the blank line before the list, unless it starts a section
+              if i > 2 and doc.blocks[i - 2].t ~= "Header" then
+                add(pandoc.RawBlock("man", ".sp"))
+              end
+              add(pandoc.RawBlock("man", ".PD 0"))
+              add(b)
+              add(pandoc.RawBlock("man", ".PD"))
+            else
+              add(b)
+            end
           end
-          add(pandoc.DefinitionList({ { { pandoc.Strong(b.content) }, { body } } }))
-        elseif isTightList(b) then
-          -- keep the blank line before the list, unless it starts a section
-          if i > 2 and doc.blocks[i - 2].t ~= "Header" then
-            add(pandoc.RawBlock("man", ".sp"))
-          end
-          add(pandoc.RawBlock("man", ".PD 0"))
-          add(b)
-          add(pandoc.RawBlock("man", ".PD"))
-        else
-          add(b)
+          doc.blocks = blocks
+          return doc
         end
-      end
-      doc.blocks = blocks
-      return doc
-    end
-  '';
+      '';
 
   ## Build the actual man page from the single MD document create above and the applied filters
-  manPage = pkgs.runCommand "tessera-man" { nativeBuildInputs = [ pkgs.pandoc ]; } ''
-    {
-    ${printSectionHeading "NAME"}
-    echo 'tessera - composable features for NixOS, nix-darwin and home-manager'
-    ${printSectionHeading "DESCRIPTION"}
-    ${printCombinedMarkdown}
-    } > tessera.md
-    mkdir -p $out/share/man/man5
-    pandoc -f gfm -t man --standalone --lua-filter ${dropBadgesFilter} --lua-filter ${manPageFilter} \
-      -M title=TESSERA -M section=5 tessera.md -o $out/share/man/man5/tessera.5
-  '';
+  manPage =
+    pkgs.runCommand "tessera-man" { nativeBuildInputs = [ pkgs.pandoc ]; } # bash
+      ''
+        {
+        ${printSectionHeading "NAME"}
+        echo 'tessera - composable features for NixOS, nix-darwin and home-manager'
+        ${printSectionHeading "DESCRIPTION"}
+        ${printCombinedMarkdown}
+        } > tessera.md
+        mkdir -p $out/share/man/man5
+        pandoc -f gfm -t man --standalone --lua-filter ${dropBadgesFilter} --lua-filter ${manPageFilter} \
+          -M title=TESSERA -M section=5 tessera.md -o $out/share/man/man5/tessera.5
+      '';
 
   ## Changes for the Info manual
   ## - sections and the categories become chapters
   ## - Headings become bold lines
   ## - Links to websites plain Texinfo
   ## - Code blocks as @example
-  infoFilter = pkgs.writeText "info-filter.lua" ''
-    local function escape(text)
-      return (text:gsub("[@{}]", "@%0"):gsub(",", "@comma{}"))
-    end
+  infoFilter =
+    pkgs.writeText "info-filter.lua" # lua
+      ''
+        local function escape(text)
+          return (text:gsub("[@{}]", "@%0"):gsub(",", "@comma{}"))
+        end
 
-    function Header(h)
-      if h.level > 2 then
-        return pandoc.Para({ pandoc.Strong(h.content) })
-      end
-      local command = h.level == 1 and "@chapter " or "@section "
-      return pandoc.RawBlock("texinfo", command .. escape(pandoc.utils.stringify(h.content)))
-    end
+        function Header(h)
+          if h.level > 2 then
+            return pandoc.Para({ pandoc.Strong(h.content) })
+          end
+          local command = h.level == 1 and "@chapter " or "@section "
+          return pandoc.RawBlock("texinfo", command .. escape(pandoc.utils.stringify(h.content)))
+        end
 
-    function Link(l)
-      if l.target:find("://") then
-        local text = escape(pandoc.utils.stringify(l.content))
-        return pandoc.RawInline("texinfo", "@uref{" .. escape(l.target) .. ", " .. text .. "}")
-      end
-    end
+        function Link(l)
+          if l.target:find("://") then
+            local text = escape(pandoc.utils.stringify(l.content))
+            return pandoc.RawInline("texinfo", "@uref{" .. escape(l.target) .. ", " .. text .. "}")
+          end
+        end
 
-    function CodeBlock(c)
-      return pandoc.RawBlock("texinfo", "@example\n" .. escape(c.text) .. "\n@end example\n@sp 1")
-    end
+        function CodeBlock(c)
+          return pandoc.RawBlock("texinfo", "@example\n" .. escape(c.text) .. "\n@end example\n@sp 1")
+        end
 
-    function HorizontalRule()
-      return {}
-    end
-  '';
+        function HorizontalRule()
+          return {}
+        end
+      '';
 
   ## The manual's entry in Info's directory
-  infoDirEntry = pkgs.writeText "dir-entry.texi" ''
-    @dircategory Tessera
-    @direntry
-    * Tessera: (tessera).           Composable features for NixOS, nix-darwin and home-manager.
-    @end direntry
-  '';
+  infoDirEntry =
+    pkgs.writeText "dir-entry.texi" # texinfo
+      ''
+        @dircategory Tessera
+        @direntry
+        * Tessera: (tessera).           Composable features for NixOS, nix-darwin and home-manager.
+        @end direntry
+      '';
 
   ## Build the Info manual from the same MD document and its `dir` file
   infoManual =
@@ -399,7 +413,7 @@ let
           pkgs.pandoc
           pkgs.texinfo
         ];
-      }
+      } # bash
       ''
         {
         ${printCombinedMarkdown}
@@ -419,7 +433,7 @@ pkgs.runCommand "tessera-docs"
       man = manPage;
       info = infoManual;
     };
-  }
+  } # bash
   ''
     cp -rL ${bookDir} book
     chmod -R u+w book

@@ -61,11 +61,13 @@
             inherit (lib) features;
           };
 
-          formatting = pkgs.runCommandLocal "formatting-check" { nativeBuildInputs = [ pkgs.nixfmt ]; } ''
-            cd ${./.}
-            find . -name '*.nix' -exec nixfmt --check {} +
-            touch $out
-          '';
+          formatting =
+            pkgs.runCommandLocal "formatting-check" { nativeBuildInputs = [ pkgs.nixfmt ]; } # bash
+              ''
+                cd ${./.}
+                find . -name '*.nix' -exec nixfmt --check {} +
+                touch $out
+              '';
         }
         // import ./tests {
           inherit (inputs.nixpkgs) lib;

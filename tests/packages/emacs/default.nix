@@ -24,21 +24,22 @@ let
         ++ elispPackages epkgs
       );
     in
-    pkgs.runCommandLocal "test-${name}" { } ''
-      export HOME=$TMPDIR
-      cp ${package}/share/emacs/site-lisp/elpa/*/tessera-${name}.el $TMPDIR
-      chmod u+w $TMPDIR/tessera-${name}.el
-      ${emacs}/bin/emacs --batch --eval '(package-activate-all)' \
-        --eval '(setq byte-compile-error-on-warn t)' \
-        -f batch-byte-compile $TMPDIR/tessera-${name}.el
-      ${lib.concatMapStrings (shell: ''
-        echo "shell-file-name: ${shell}"
-        PATH=/bin ${emacs}/bin/emacs --batch --eval '(package-activate-all)' \
-          --eval '(setq shell-file-name "${shell}")' \
-          -l ert -l ${./${name}.el} -f ert-run-tests-batch-and-exit
-      '') shells}
-      touch $out
-    '';
+    pkgs.runCommandLocal "test-${name}" { } # bash
+      ''
+        export HOME=$TMPDIR
+        cp ${package}/share/emacs/site-lisp/elpa/*/tessera-${name}.el $TMPDIR
+        chmod u+w $TMPDIR/tessera-${name}.el
+        ${emacs}/bin/emacs --batch --eval '(package-activate-all)' \
+          --eval '(setq byte-compile-error-on-warn t)' \
+          -f batch-byte-compile $TMPDIR/tessera-${name}.el
+        ${lib.concatMapStrings (shell: ''
+          echo "shell-file-name: ${shell}"
+          PATH=/bin ${emacs}/bin/emacs --batch --eval '(package-activate-all)' \
+            --eval '(setq shell-file-name "${shell}")' \
+            -l ert -l ${./${name}.el} -f ert-run-tests-batch-and-exit
+        '') shells}
+        touch $out
+      '';
 in
 {
   javascript-utils = ert "javascript-utils" {

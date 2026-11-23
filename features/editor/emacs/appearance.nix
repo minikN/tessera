@@ -187,29 +187,31 @@ mkFeature {
           operator = syntax.operator;
           preprocessor = syntax.preprocessor;
         };
-      themeDir = pkgs.writeTextDir "tessera-theme.el" ''
-        ;;; tessera-theme.el --- Modus theme in the tessera colours -*- lexical-binding: t -*-
+      themeDir =
+        pkgs.writeTextDir "tessera-theme.el" # elisp
+          ''
+            ;;; tessera-theme.el --- Modus theme in the tessera colours -*- lexical-binding: t -*-
 
-        (require 'modus-themes)
+            (require 'modus-themes)
 
-        (defconst tessera-palette
-          (modus-themes-generate-palette
-           '(${
-             lib.concatStringsSep "\n     " (
-               lib.mapAttrsToList (name: value: ''(${name} "${value}")'') modusColors
-             )
-           }))
-          "Palette of the `tessera' theme, generated from the base16 scheme.")
+            (defconst tessera-palette
+              (modus-themes-generate-palette
+               '(${
+                 lib.concatStringsSep "\n     " (
+                   lib.mapAttrsToList (name: value: ''(${name} "${value}")'') modusColors
+                 )
+               }))
+              "Palette of the `tessera' theme, generated from the base16 scheme.")
 
-        (modus-themes-theme
-         'tessera
-         'tessera
-         "Modus theme in the tessera colours."
-         '${theme.polarity}
-         'tessera-palette
-         nil
-         nil)
-      '';
+            (modus-themes-theme
+             'tessera
+             'tessera
+             "Modus theme in the tessera colours."
+             '${theme.polarity}
+             'tessera-palette
+             nil
+             nil)
+          '';
     in
     lib.mkMerge [
       (mkElispConfig pkgs {
@@ -217,165 +219,169 @@ mkFeature {
         summary = "Clean frames, fonts, spacing and a Modus theme";
         elispPackages = epkgs: [ epkgs.modus-themes ];
 
-        earlyInit = ''
-          ${lib.optionalString (
-            theme.enable && cfg.useScheme
-          ) ''(add-to-list 'custom-theme-load-path "${themeDir}")''}
-          (push '(menu-bar-lines . 0) default-frame-alist)
-          (push '(tool-bar-lines . 0) default-frame-alist)
-          (push '(vertical-scroll-bars) default-frame-alist)
-          (push '(horizontal-scroll-bars) default-frame-alist)
-          (setq menu-bar-mode nil
-                tool-bar-mode nil
-                scroll-bar-mode nil
-                inhibit-startup-screen t
-                initial-scratch-message nil)
-          ${lib.optionalString font.enable ''
-            (push '(font . "${font.fonts.monospace.name}-${toString font.fonts.monospace.size}")
-                  default-frame-alist)
-          ''}
-          (push '(internal-border-width . ${toString cfg.margin}) default-frame-alist)
-          (push '(left-fringe . ${toString cfg.fringes}) default-frame-alist)
-          (push '(right-fringe . ${toString cfg.fringes}) default-frame-alist)
-          ${lib.optionalString isDarwin ''
-            (push '(ns-transparent-titlebar . t) default-frame-alist)
-          ''}
-        '';
+        earlyInit = # elisp
+          ''
+            ${lib.optionalString (
+              theme.enable && cfg.useScheme
+            ) ''(add-to-list 'custom-theme-load-path "${themeDir}")''}
+            (push '(menu-bar-lines . 0) default-frame-alist)
+            (push '(tool-bar-lines . 0) default-frame-alist)
+            (push '(vertical-scroll-bars) default-frame-alist)
+            (push '(horizontal-scroll-bars) default-frame-alist)
+            (setq menu-bar-mode nil
+                  tool-bar-mode nil
+                  scroll-bar-mode nil
+                  inhibit-startup-screen t
+                  initial-scratch-message nil)
+            ${lib.optionalString font.enable ''
+              (push '(font . "${font.fonts.monospace.name}-${toString font.fonts.monospace.size}")
+                    default-frame-alist)
+            ''}
+            (push '(internal-border-width . ${toString cfg.margin}) default-frame-alist)
+            (push '(left-fringe . ${toString cfg.fringes}) default-frame-alist)
+            (push '(right-fringe . ${toString cfg.fringes}) default-frame-alist)
+            ${lib.optionalString isDarwin ''
+              (push '(ns-transparent-titlebar . t) default-frame-alist)
+            ''}
+          '';
 
-        config = ''
-          (require 'modus-themes)
+        config = # elisp
+          ''
+            (require 'modus-themes)
 
-          (defgroup tessera-appearance nil
-            "Margins, fringes and paddings of Emacs frames and windows."
-            :group 'tessera
-            :prefix "tessera-appearance-")
+            (defgroup tessera-appearance nil
+              "Margins, fringes and paddings of Emacs frames and windows."
+              :group 'tessera
+              :prefix "tessera-appearance-")
 
-          (defun tessera-appearance--set (symbol value)
-            "Set SYMBOL to VALUE and apply the appearance settings."
-            (set-default-toplevel-value symbol value)
-            (tessera-appearance--apply))
+            (defun tessera-appearance--set (symbol value)
+              "Set SYMBOL to VALUE and apply the appearance settings."
+              (set-default-toplevel-value symbol value)
+              (tessera-appearance--apply))
 
-          (defcustom tessera-appearance-margin ${toString cfg.margin}
-            "Space in pixels around the frame and between side-by-side windows."
-            :type 'natnum
-            :initialize #'custom-initialize-default
-            :set #'tessera-appearance--set)
+            (defcustom tessera-appearance-margin ${toString cfg.margin}
+              "Space in pixels around the frame and between side-by-side windows."
+              :type 'natnum
+              :initialize #'custom-initialize-default
+              :set #'tessera-appearance--set)
 
-          (defcustom tessera-appearance-fringes ${toString cfg.fringes}
-            "Width in pixels of the left and right fringes."
-            :type 'natnum
-            :initialize #'custom-initialize-default
-            :set #'tessera-appearance--set)
+            (defcustom tessera-appearance-fringes ${toString cfg.fringes}
+              "Width in pixels of the left and right fringes."
+              :type 'natnum
+              :initialize #'custom-initialize-default
+              :set #'tessera-appearance--set)
 
-          (defcustom tessera-appearance-mode-line-padding ${toString cfg.padding.modeLine}
-            "Padding in pixels around the mode line."
-            :type 'natnum
-            :initialize #'custom-initialize-default
-            :set #'tessera-appearance--set)
+            (defcustom tessera-appearance-mode-line-padding ${toString cfg.padding.modeLine}
+              "Padding in pixels around the mode line."
+              :type 'natnum
+              :initialize #'custom-initialize-default
+              :set #'tessera-appearance--set)
 
-          (defcustom tessera-appearance-header-line-padding ${toString cfg.padding.headerLine}
-            "Padding in pixels around the header line."
-            :type 'natnum
-            :initialize #'custom-initialize-default
-            :set #'tessera-appearance--set)
+            (defcustom tessera-appearance-header-line-padding ${toString cfg.padding.headerLine}
+              "Padding in pixels around the header line."
+              :type 'natnum
+              :initialize #'custom-initialize-default
+              :set #'tessera-appearance--set)
 
-          (defcustom tessera-appearance-tab-bar-padding ${toString cfg.padding.tabBar}
-            "Padding in pixels around the tab bar."
-            :type 'natnum
-            :initialize #'custom-initialize-default
-            :set #'tessera-appearance--set)
+            (defcustom tessera-appearance-tab-bar-padding ${toString cfg.padding.tabBar}
+              "Padding in pixels around the tab bar."
+              :type 'natnum
+              :initialize #'custom-initialize-default
+              :set #'tessera-appearance--set)
 
-          (defcustom tessera-appearance-echo-area-padding ${toString cfg.padding.echoArea}
-            "Space in pixels between the windows and the echo area, and between stacked windows."
-            :type 'natnum
-            :initialize #'custom-initialize-default
-            :set #'tessera-appearance--set)
+            (defcustom tessera-appearance-echo-area-padding ${toString cfg.padding.echoArea}
+              "Space in pixels between the windows and the echo area, and between stacked windows."
+              :type 'natnum
+              :initialize #'custom-initialize-default
+              :set #'tessera-appearance--set)
 
-          (defcustom tessera-appearance-header-line-as-mode-line ${
-            if cfg.headerLineAsModeLine then "t" else "nil"
-          }
-            "Non-nil means show the mode line at the top of windows, in the header line."
-            :type 'boolean
-            :initialize #'custom-initialize-default
-            :set #'tessera-appearance--set)
+            (defcustom tessera-appearance-header-line-as-mode-line ${
+              if cfg.headerLineAsModeLine then "t" else "nil"
+            }
+              "Non-nil means show the mode line at the top of windows, in the header line."
+              :type 'boolean
+              :initialize #'custom-initialize-default
+              :set #'tessera-appearance--set)
 
-          (defvar tessera-appearance--mode-line-format nil
-            "The default `mode-line-format' while it is shown in the header line.")
+            (defvar tessera-appearance--mode-line-format nil
+              "The default `mode-line-format' while it is shown in the header line.")
 
-          (defun tessera-appearance--move-mode-line (to-header-line)
-            "Show the mode line in the header line if TO-HEADER-LINE, else at the bottom."
-            (cond
-             ((and to-header-line (not tessera-appearance--mode-line-format))
-              (setq tessera-appearance--mode-line-format (default-value 'mode-line-format))
-              (setq-default header-line-format tessera-appearance--mode-line-format
-                            mode-line-format nil))
-             ((and (not to-header-line) tessera-appearance--mode-line-format)
-              (setq-default mode-line-format tessera-appearance--mode-line-format
-                            header-line-format nil)
-              (setq tessera-appearance--mode-line-format nil))))
+            (defun tessera-appearance--move-mode-line (to-header-line)
+              "Show the mode line in the header line if TO-HEADER-LINE, else at the bottom."
+              (cond
+               ((and to-header-line (not tessera-appearance--mode-line-format))
+                (setq tessera-appearance--mode-line-format (default-value 'mode-line-format))
+                (setq-default header-line-format tessera-appearance--mode-line-format
+                              mode-line-format nil))
+               ((and (not to-header-line) tessera-appearance--mode-line-format)
+                (setq-default mode-line-format tessera-appearance--mode-line-format
+                              header-line-format nil)
+                (setq tessera-appearance--mode-line-format nil))))
 
-          (defun tessera-appearance--apply ()
-            "Apply margin, fringes, paddings and mode line position."
-            (modify-all-frames-parameters
-             `((internal-border-width . ,tessera-appearance-margin)))
-            ;; Bottom dividers also separate the lowest windows from the echo area
-            (setq window-divider-default-right-width tessera-appearance-margin
-                  window-divider-default-bottom-width tessera-appearance-echo-area-padding
-                  window-divider-default-places t)
-            (window-divider-mode (if (> (+ tessera-appearance-margin tessera-appearance-echo-area-padding) 0)
-                                     1 -1))
-            (fringe-mode tessera-appearance-fringes)
+            (defun tessera-appearance--apply ()
+              "Apply margin, fringes, paddings and mode line position."
+              (modify-all-frames-parameters
+               `((internal-border-width . ,tessera-appearance-margin)))
+              ;; Bottom dividers also separate the lowest windows from the echo area
+              (setq window-divider-default-right-width tessera-appearance-margin
+                    window-divider-default-bottom-width tessera-appearance-echo-area-padding
+                    window-divider-default-places t)
+              (window-divider-mode (if (> (+ tessera-appearance-margin tessera-appearance-echo-area-padding) 0)
+                                       1 -1))
+              (fringe-mode tessera-appearance-fringes)
 
-            ;; Flat boxes take the face's background, so they work with any theme
-            (pcase-dolist (`(,face . ,width)
-                           `((mode-line . ,tessera-appearance-mode-line-padding)
-                             (mode-line-inactive . ,tessera-appearance-mode-line-padding)
-                             (header-line . ,tessera-appearance-header-line-padding)
-                             (tab-bar . ,tessera-appearance-tab-bar-padding)))
-              (face-spec-set face (and (> width 0)
-                                       `((t :box (:line-width ,width :style flat-button))))))
-            (tessera-appearance--move-mode-line tessera-appearance-header-line-as-mode-line))
+              ;; Flat boxes take the face's background, so they work with any theme
+              (pcase-dolist (`(,face . ,width)
+                             `((mode-line . ,tessera-appearance-mode-line-padding)
+                               (mode-line-inactive . ,tessera-appearance-mode-line-padding)
+                               (header-line . ,tessera-appearance-header-line-padding)
+                               (tab-bar . ,tessera-appearance-tab-bar-padding)))
+                (face-spec-set face (and (> width 0)
+                                         `((t :box (:line-width ,width :style flat-button))))))
+              (tessera-appearance--move-mode-line tessera-appearance-header-line-as-mode-line))
 
-          (defun tessera-appearance--hide-window-dividers (&rest _)
-            "Draw window dividers in the background colour of the Modus theme in use."
-            (let ((bg (modus-themes-with-colors bg-main)))
-              (dolist (face '(window-divider window-divider-first-pixel
-                              window-divider-last-pixel vertical-border))
-                (face-spec-set face (and bg `((t :foreground ,bg)))))))
+            (defun tessera-appearance--hide-window-dividers (&rest _)
+              "Draw window dividers in the background colour of the Modus theme in use."
+              (let ((bg (modus-themes-with-colors bg-main)))
+                (dolist (face '(window-divider window-divider-first-pixel
+                                window-divider-last-pixel vertical-border))
+                  (face-spec-set face (and bg `((t :foreground ,bg)))))))
 
-          (add-hook 'enable-theme-functions #'tessera-appearance--hide-window-dividers)
-          (tessera-appearance--apply)
+            (add-hook 'enable-theme-functions #'tessera-appearance--hide-window-dividers)
+            (tessera-appearance--apply)
 
-          (setopt modus-themes-italic-constructs t
-                  modus-themes-bold-constructs t
-                  modus-themes-mixed-fonts t
-                  modus-themes-common-palette-overrides '((fringe unspecified)))
-          ;; Level 4 also colours function calls, properties and operators.
-          (with-eval-after-load 'treesit
-            (setopt treesit-font-lock-level 4))
-          ${lib.optionalString font.enable ''
-            (defun tessera-appearance--set-emoji-font ()
-              (when (display-graphic-p)
-                (set-fontset-font t 'emoji (font-spec :family "${font.fonts.unicode.name}"))))
-            (tessera-appearance--set-emoji-font)
-            (add-hook 'server-after-make-frame-hook #'tessera-appearance--set-emoji-font)
-          ''}
-          ${lib.optionalString isDarwin ''
-            (defun tessera-appearance--set-ns-appearance (theme)
-              "Give the title bar the background mode of THEME."
-              (when-let* ((mode (plist-get (get theme 'theme-properties) :background-mode)))
-                (modify-all-frames-parameters `((ns-appearance . ,mode)))))
-            (add-hook 'enable-theme-functions #'tessera-appearance--set-ns-appearance)
-          ''}
-        '';
+            (setopt modus-themes-italic-constructs t
+                    modus-themes-bold-constructs t
+                    modus-themes-mixed-fonts t
+                    modus-themes-common-palette-overrides '((fringe unspecified)))
+            ;; Level 4 also colours function calls, properties and operators.
+            (with-eval-after-load 'treesit
+              (setopt treesit-font-lock-level 4))
+            ${lib.optionalString font.enable ''
+              (defun tessera-appearance--set-emoji-font ()
+                (when (display-graphic-p)
+                  (set-fontset-font t 'emoji (font-spec :family "${font.fonts.unicode.name}"))))
+              (tessera-appearance--set-emoji-font)
+              (add-hook 'server-after-make-frame-hook #'tessera-appearance--set-emoji-font)
+            ''}
+            ${lib.optionalString isDarwin ''
+              (defun tessera-appearance--set-ns-appearance (theme)
+                "Give the title bar the background mode of THEME."
+                (when-let* ((mode (plist-get (get theme 'theme-properties) :background-mode)))
+                  (modify-all-frames-parameters `((ns-appearance . ,mode)))))
+              (add-hook 'enable-theme-functions #'tessera-appearance--set-ns-appearance)
+            ''}
+          '';
       })
 
       {
-        programs.emacs.extraConfig = lib.optionalString theme.enable ''
-          (modus-themes-activate '${emacsTheme})
-          (unless custom-enabled-themes
-            (enable-theme '${emacsTheme}))
-        '';
+        programs.emacs.extraConfig =
+          lib.optionalString theme.enable # elisp
+            ''
+              (modus-themes-activate '${emacsTheme})
+              (unless custom-enabled-themes
+                (enable-theme '${emacsTheme}))
+            '';
       }
     ];
 }

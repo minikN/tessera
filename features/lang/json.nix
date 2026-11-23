@@ -171,163 +171,165 @@ mkFeature {
               ++ lib.optional cfg.utils.enable (pkgs.tessera.emacs.json-utils.override { emacsPackages = epkgs; })
             );
 
-          config = ''
-            (add-to-list 'auto-mode-alist '("\\.jsonc\\'" . js-json-mode))
-            ${lib.optionalString treesit ''
-              (add-to-list 'auto-mode-alist '("\\.json5\\'" . json5-ts-mode))
-              (setopt treesit-enabled-modes
-                      (if (eq treesit-enabled-modes t)
-                          t
-                        (seq-union treesit-enabled-modes '(json-ts-mode))))
-            ''}
-            ${lib.optionalString config.features.emacs.eglot.enable ''
+          config = # elisp
+            ''
+              (add-to-list 'auto-mode-alist '("\\.jsonc\\'" . js-json-mode))
+              ${lib.optionalString treesit ''
+                (add-to-list 'auto-mode-alist '("\\.json5\\'" . json5-ts-mode))
+                (setopt treesit-enabled-modes
+                        (if (eq treesit-enabled-modes t)
+                            t
+                          (seq-union treesit-enabled-modes '(json-ts-mode))))
+              ''}
+              ${lib.optionalString config.features.emacs.eglot.enable ''
 
-              (defgroup tessera-json nil
-                "JSON, JSONC and JSON5."
-                :group 'tessera)
+                (defgroup tessera-json nil
+                  "JSON, JSONC and JSON5."
+                  :group 'tessera)
 
-              (defcustom tessera-json-schemas '(${schemas})
-                "JSON schemas by file name pattern.
-              An alist of (PATTERN . SCHEMA), e.g. (\"*.foo.json\" . \"foo.schema.json\").
-              SCHEMA is a URL or a file, relative to the project's root.  Set it in a
-              project's .dir-locals.el to use other schemas there; the language
-              server reads it when it starts."
-                :type '(alist :key-type (string :tag "File name pattern")
-                              :value-type (string :tag "Schema file or URL"))
-                :safe (lambda (value)
-                        (and (listp value)
-                             (seq-every-p (lambda (entry)
-                                            (and (consp entry) (stringp (car entry)) (stringp (cdr entry))))
-                                          value)))
-                :group 'tessera-json)
+                (defcustom tessera-json-schemas '(${schemas})
+                  "JSON schemas by file name pattern.
+                An alist of (PATTERN . SCHEMA), e.g. (\"*.foo.json\" . \"foo.schema.json\").
+                SCHEMA is a URL or a file, relative to the project's root.  Set it in a
+                project's .dir-locals.el to use other schemas there; the language
+                server reads it when it starts."
+                  :type '(alist :key-type (string :tag "File name pattern")
+                                :value-type (string :tag "Schema file or URL"))
+                  :safe (lambda (value)
+                          (and (listp value)
+                               (seq-every-p (lambda (entry)
+                                              (and (consp entry) (stringp (car entry)) (stringp (cdr entry))))
+                                            value)))
+                  :group 'tessera-json)
 
-              (defconst tessera-json--jsonc-files
-                [${lib.concatMapStringsSep " " builtins.toJSON jsoncFiles}]
-                "Files that may have comments and trailing commas.")
+                (defconst tessera-json--jsonc-files
+                  [${lib.concatMapStringsSep " " builtins.toJSON jsoncFiles}]
+                  "Files that may have comments and trailing commas.")
 
-              (defun tessera-json--workspace-configuration (_server)
-                "Return the settings of vscode-json-language-server.
-              Its schemas come from `tessera-json-schemas'."
-                `(:json
-                  (:validate (:enable t)
-                   :schemas
-                   ,(vconcat
-                     `((:fileMatch ,tessera-json--jsonc-files
-                        :schema (:allowComments t :allowTrailingCommas t)))
-                     (mapcar (pcase-lambda (`(,pattern . ,schema))
-                               `(:fileMatch [,pattern]
-                                 :url ,(if (string-match-p "\\`[[:alpha:]][[:alnum:]+.-]+:" schema)
-                                           schema
-                                         (eglot-path-to-uri (expand-file-name schema)))))
-                             tessera-json-schemas)))))
+                (defun tessera-json--workspace-configuration (_server)
+                  "Return the settings of vscode-json-language-server.
+                Its schemas come from `tessera-json-schemas'."
+                  `(:json
+                    (:validate (:enable t)
+                     :schemas
+                     ,(vconcat
+                       `((:fileMatch ,tessera-json--jsonc-files
+                          :schema (:allowComments t :allowTrailingCommas t)))
+                       (mapcar (pcase-lambda (`(,pattern . ,schema))
+                                 `(:fileMatch [,pattern]
+                                   :url ,(if (string-match-p "\\`[[:alpha:]][[:alnum:]+.-]+:" schema)
+                                             schema
+                                           (eglot-path-to-uri (expand-file-name schema)))))
+                               tessera-json-schemas)))))
 
-              (defun tessera-json--project-command (command)
-                "Return COMMAND, with the project's own program if it has one.
-              That is the program of the same name in node_modules/.bin, run with
-              Node.js first in `PATH'."
-                (let ((bin (concat "node_modules/.bin/" (file-name-nondirectory (car command)))))
-                  (if-let* ((dir (locate-dominating-file default-directory bin)))
-                      `("${pkgs.coreutils}/bin/env"
-                        ,(concat "PATH=${cfg.packages.nodejs.package}/bin:" (getenv "PATH"))
-                        ,(file-local-name (expand-file-name bin dir))
-                        ,@(cdr command))
-                    command)))
+                (defun tessera-json--project-command (command)
+                  "Return COMMAND, with the project's own program if it has one.
+                That is the program of the same name in node_modules/.bin, run with
+                Node.js first in `PATH'."
+                  (let ((bin (concat "node_modules/.bin/" (file-name-nondirectory (car command)))))
+                    (if-let* ((dir (locate-dominating-file default-directory bin)))
+                        `("${pkgs.coreutils}/bin/env"
+                          ,(concat "PATH=${cfg.packages.nodejs.package}/bin:" (getenv "PATH"))
+                          ,(file-local-name (expand-file-name bin dir))
+                          ,@(cdr command))
+                      command)))
 
-              (defconst tessera-json--tool-servers
-                '((("biome.json" "biome.jsonc" ".biome.json" ".biome.jsonc")
-                   "${pkgs.biome}/bin/biome" "lsp-proxy")
-                  ((".oxfmtrc.json" ".oxfmtrc.jsonc" "oxfmt.config.ts")
-                   "${oxfmt}" "--lsp"))
-                "Language servers of the tools, after their configuration files.
-              In the order they format.")
+                (defconst tessera-json--tool-servers
+                  '((("biome.json" "biome.jsonc" ".biome.json" ".biome.jsonc")
+                     "${pkgs.biome}/bin/biome" "lsp-proxy")
+                    ((".oxfmtrc.json" ".oxfmtrc.jsonc" "oxfmt.config.ts")
+                     "${oxfmt}" "--lsp"))
+                  "Language servers of the tools, after their configuration files.
+                In the order they format.")
 
-              (defun tessera-json--language-server (&rest _)
-                "Return the language servers for the current JSON buffer.
-              vscode-json-language-server, with the servers of the tools the project
-              sets up, see `tessera-eglot-contact'."
-                (cons 'tessera-json--jsonls
-                      (append
-                       (tessera-eglot-contact
-                        (cons '("${cfg.packages.jsonls.package}/bin/vscode-json-language-server" "--stdio")
-                              (seq-keep (pcase-lambda (`(,files . ,command))
-                                          (and (seq-some (lambda (file) (locate-dominating-file default-directory file))
-                                                         files)
-                                               (tessera-json--project-command command)))
-                                        tessera-json--tool-servers)))
-                       ;; vscode-json-language-server only formats when told to
-                       '(:initializationOptions (:provideFormatter t)))))
+                (defun tessera-json--language-server (&rest _)
+                  "Return the language servers for the current JSON buffer.
+                vscode-json-language-server, with the servers of the tools the project
+                sets up, see `tessera-eglot-contact'."
+                  (cons 'tessera-json--jsonls
+                        (append
+                         (tessera-eglot-contact
+                          (cons '("${cfg.packages.jsonls.package}/bin/vscode-json-language-server" "--stdio")
+                                (seq-keep (pcase-lambda (`(,files . ,command))
+                                            (and (seq-some (lambda (file) (locate-dominating-file default-directory file))
+                                                           files)
+                                                 (tessera-json--project-command command)))
+                                          tessera-json--tool-servers)))
+                         ;; vscode-json-language-server only formats when told to
+                         '(:initializationOptions (:provideFormatter t)))))
 
-              (defun tessera-json--json5-server (&rest _)
-                "Return oxfmt's language server, the project's own if it has one."
-                (cons 'tessera-json--oxfmt
-                      (tessera-json--project-command '("${oxfmt}" "--lsp"))))
+                (defun tessera-json--json5-server (&rest _)
+                  "Return oxfmt's language server, the project's own if it has one."
+                  (cons 'tessera-json--oxfmt
+                        (tessera-json--project-command '("${oxfmt}" "--lsp"))))
 
-              (with-eval-after-load 'eglot
-                (defclass tessera-json--jsonls (eglot-lsp-server) ()
-                  :documentation "vscode-json-language-server, maybe through rassumfrassum.")
+                (with-eval-after-load 'eglot
+                  (defclass tessera-json--jsonls (eglot-lsp-server) ()
+                    :documentation "vscode-json-language-server, maybe through rassumfrassum.")
 
-                (cl-defmethod eglot-execute ((server tessera-json--jsonls) action)
-                  "Execute ACTION, sorting the document for the command \"json.sort\".
-              The server leaves that one to the client, which asks it for the edits."
-                  (if (equal (plist-get action :command) "json.sort")
-                      (eglot--apply-text-edits
-                       (jsonrpc-request server :json/sort
-                                        `(,@(eglot--TextDocumentIdentifier)
-                                          :options (:tabSize ,tab-width
-                                                    :insertSpaces ,(if indent-tabs-mode :json-false t)))))
-                    (cl-call-next-method)))
+                  (cl-defmethod eglot-execute ((server tessera-json--jsonls) action)
+                    "Execute ACTION, sorting the document for the command \"json.sort\".
+                The server leaves that one to the client, which asks it for the edits."
+                    (if (equal (plist-get action :command) "json.sort")
+                        (eglot--apply-text-edits
+                         (jsonrpc-request server :json/sort
+                                          `(,@(eglot--TextDocumentIdentifier)
+                                            :options (:tabSize ,tab-width
+                                                      :insertSpaces ,(if indent-tabs-mode :json-false t)))))
+                      (cl-call-next-method)))
 
-                (defclass tessera-json--oxfmt (eglot-lsp-server) ()
-                  :documentation "oxfmt's language server in JSON5 buffers.")
+                  (defclass tessera-json--oxfmt (eglot-lsp-server) ()
+                    :documentation "oxfmt's language server in JSON5 buffers.")
 
-                (cl-defmethod eglot-client-capabilities ((_ tessera-json--oxfmt))
-                  "Keep oxfmt from asking to watch its configuration files.
-              Eglot would watch every directory of the project, which runs out of
-              file descriptors in large ones."
-                  (let ((capabilities (cl-call-next-method)))
-                    (plist-put (plist-get capabilities :workspace)
-                               :didChangeWatchedFiles '(:dynamicRegistration :json-false))
-                    capabilities))
+                  (cl-defmethod eglot-client-capabilities ((_ tessera-json--oxfmt))
+                    "Keep oxfmt from asking to watch its configuration files.
+                Eglot would watch every directory of the project, which runs out of
+                file descriptors in large ones."
+                    (let ((capabilities (cl-call-next-method)))
+                      (plist-put (plist-get capabilities :workspace)
+                                 :didChangeWatchedFiles '(:dynamicRegistration :json-false))
+                      capabilities))
 
-                (add-to-list 'eglot-server-programs
-                             '(((json-ts-mode :language-id "json")
-                                (js-json-mode :language-id "json"))
-                               . tessera-json--language-server))
-                (add-to-list 'eglot-server-programs
-                             '((json5-ts-mode :language-id "json5") . tessera-json--json5-server))
-                (add-hook 'tessera-eglot-workspace-configuration-functions
-                          #'tessera-json--workspace-configuration))
+                  (add-to-list 'eglot-server-programs
+                               '(((json-ts-mode :language-id "json")
+                                  (js-json-mode :language-id "json"))
+                                 . tessera-json--language-server))
+                  (add-to-list 'eglot-server-programs
+                               '((json5-ts-mode :language-id "json5") . tessera-json--json5-server))
+                  (add-hook 'tessera-eglot-workspace-configuration-functions
+                            #'tessera-json--workspace-configuration))
 
-              (defun tessera-json--eglot-ensure ()
-                "Start Eglot, formatting with the mode's indentation."
-                (require 'eglot)
-                ;; tree-sitter does this way better than the lsp
-                (setq-local eglot-stay-out-of (cons 'imenu eglot-stay-out-of))
-                ;; Eglot passes `tab-width' as the indentation to format with
-                (setq-local tab-width (pcase major-mode
-                                        ('json5-ts-mode json5-ts-mode-indent-offset)
-                                        ('json-ts-mode json-ts-indent-offset)
-                                        (_ js-indent-level)))
-                (eglot-ensure))
-              (add-hook 'json-ts-mode-hook #'tessera-json--eglot-ensure)
-              (add-hook 'json5-ts-mode-hook #'tessera-json--eglot-ensure)
-              (add-hook 'js-json-mode-hook #'tessera-json--eglot-ensure)
-            ''}
-          '';
+                (defun tessera-json--eglot-ensure ()
+                  "Start Eglot, formatting with the mode's indentation."
+                  (require 'eglot)
+                  ;; tree-sitter does this way better than the lsp
+                  (setq-local eglot-stay-out-of (cons 'imenu eglot-stay-out-of))
+                  ;; Eglot passes `tab-width' as the indentation to format with
+                  (setq-local tab-width (pcase major-mode
+                                          ('json5-ts-mode json5-ts-mode-indent-offset)
+                                          ('json-ts-mode json-ts-indent-offset)
+                                          (_ js-indent-level)))
+                  (eglot-ensure))
+                (add-hook 'json-ts-mode-hook #'tessera-json--eglot-ensure)
+                (add-hook 'json5-ts-mode-hook #'tessera-json--eglot-ensure)
+                (add-hook 'js-json-mode-hook #'tessera-json--eglot-ensure)
+              ''}
+            '';
         })
 
         (lib.mkIf (cfg.utils.enable && treesit) {
-          programs.emacs.extraConfig = ''
-            (with-eval-after-load 'tessera-keymaps
-              (require 'tessera-json-utils)
-              (defvar-keymap tessera-json-code-map
-                :doc "Keymap under `C-c c' in JSON and JSON5 buffers."
-                "u" (cons "utils" tessera-json-utils-map))
-              (with-eval-after-load 'json-ts-mode
-                (keymap-set json-ts-mode-map "C-c ${keys.code}" (cons "code" tessera-json-code-map)))
-              (with-eval-after-load 'json5-ts-mode
-                (keymap-set json5-ts-mode-map "C-c ${keys.code}" (cons "code" tessera-json-code-map))))
-          '';
+          programs.emacs.extraConfig = # elisp
+            ''
+              (with-eval-after-load 'tessera-keymaps
+                (require 'tessera-json-utils)
+                (defvar-keymap tessera-json-code-map
+                  :doc "Keymap under `C-c c' in JSON and JSON5 buffers."
+                  "u" (cons "utils" tessera-json-utils-map))
+                (with-eval-after-load 'json-ts-mode
+                  (keymap-set json-ts-mode-map "C-c ${keys.code}" (cons "code" tessera-json-code-map)))
+                (with-eval-after-load 'json5-ts-mode
+                  (keymap-set json5-ts-mode-map "C-c ${keys.code}" (cons "code" tessera-json-code-map))))
+            '';
         })
       ]
     );

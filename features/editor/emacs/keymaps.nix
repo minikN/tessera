@@ -93,105 +93,107 @@ mkFeature {
         name = "tessera-keymaps";
         summary = "Prefix keymaps shared by tessera features";
 
-        config = ''
-          (defgroup tessera-keymaps nil
-            "Prefix keymaps shared by tessera features."
-            :group 'tessera)
+        config = # elisp
+          ''
+            (defgroup tessera-keymaps nil
+              "Prefix keymaps shared by tessera features."
+              :group 'tessera)
 
-          (defcustom tessera-keymaps-which-key-commands nil
-            "Non-nil means which-key shows the commands keys run, not their descriptions.
-          Prefixes keep their descriptions.  `C-h c' toggles it in which-key's popup."
-            :type 'boolean
-            :group 'tessera-keymaps)
+            (defcustom tessera-keymaps-which-key-commands nil
+              "Non-nil means which-key shows the commands keys run, not their descriptions.
+            Prefixes keep their descriptions.  `C-h c' toggles it in which-key's popup."
+              :type 'boolean
+              :group 'tessera-keymaps)
 
-          (defvar which-key-max-description-length)
+            (defvar which-key-max-description-length)
 
-          (defun tessera-keymaps--which-key-commands (format unformatted &rest args)
-            "Call FORMAT, `which-key--format-and-replace', maybe with commands.
-          UNFORMATTED is its list of (KEY . DESCRIPTION).  If
-          `tessera-keymaps-which-key-commands' is non-nil, a description becomes
-          the name of the command KEY runs, untruncated; prefixes keep theirs."
-            (if (not tessera-keymaps-which-key-commands)
-                (apply format unformatted args)
-              (let ((which-key-max-description-length nil))
-                (apply format
-                       (mapcar (pcase-lambda (`(,key . ,description))
-                                 (let ((command (ignore-errors (key-binding (kbd key)))))
-                                   (cons key (if (and command (symbolp command))
-                                                 (symbol-name command)
-                                               description))))
-                               unformatted)
-                       args))))
+            (defun tessera-keymaps--which-key-commands (format unformatted &rest args)
+              "Call FORMAT, `which-key--format-and-replace', maybe with commands.
+            UNFORMATTED is its list of (KEY . DESCRIPTION).  If
+            `tessera-keymaps-which-key-commands' is non-nil, a description becomes
+            the name of the command KEY runs, untruncated; prefixes keep theirs."
+              (if (not tessera-keymaps-which-key-commands)
+                  (apply format unformatted args)
+                (let ((which-key-max-description-length nil))
+                  (apply format
+                         (mapcar (pcase-lambda (`(,key . ,description))
+                                   (let ((command (ignore-errors (key-binding (kbd key)))))
+                                     (cons key (if (and command (symbolp command))
+                                                   (symbol-name command)
+                                                 description))))
+                                 unformatted)
+                         args))))
 
-          (defun tessera-keymaps-which-key-toggle-commands (&optional _key)
-            "Toggle between descriptions and commands in which-key's popup.
-          See `tessera-keymaps-which-key-commands'."
-            (interactive)
-            (setq tessera-keymaps-which-key-commands (not tessera-keymaps-which-key-commands))
-            (when (which-key--popup-showing-p)
-              (which-key-reload-key-sequence)
-              (which-key--create-buffer-and-show (which-key--current-prefix))))
+            (defun tessera-keymaps-which-key-toggle-commands (&optional _key)
+              "Toggle between descriptions and commands in which-key's popup.
+            See `tessera-keymaps-which-key-commands'."
+              (interactive)
+              (setq tessera-keymaps-which-key-commands (not tessera-keymaps-which-key-commands))
+              (when (which-key--popup-showing-p)
+                (which-key-reload-key-sequence)
+                (which-key--create-buffer-and-show (which-key--current-prefix))))
 
-          (defvar-keymap tessera-app-map
-            :doc "Prefix keymap for applications.
-          Features bind their entry commands here.")
+            (defvar-keymap tessera-app-map
+              :doc "Prefix keymap for applications.
+            Features bind their entry commands here.")
 
-          (defvar-keymap tessera-toggle-map
-            :doc "Prefix keymap for toggling modes.
-          Lowercase keys toggle a buffer-local mode, uppercase keys its global variant."
-            "f" '("fill column" . display-fill-column-indicator-mode)
-            "F" '("fill column (global)" . global-display-fill-column-indicator-mode)
-            "l" '("line numbers" . display-line-numbers-mode)
-            "L" '("line numbers (global)" . global-display-line-numbers-mode)
-            "r" '("read-only" . read-only-mode)
-            "v" '("visual line mode" . visual-line-mode)
-            "V" '("visual line mode (global)" . global-visual-line-mode)
-            "w" '("whitespace display" . whitespace-mode)
-            "W" '("whitespace display (global)" . global-whitespace-mode))
+            (defvar-keymap tessera-toggle-map
+              :doc "Prefix keymap for toggling modes.
+            Lowercase keys toggle a buffer-local mode, uppercase keys its global variant."
+              "f" '("fill column" . display-fill-column-indicator-mode)
+              "F" '("fill column (global)" . global-display-fill-column-indicator-mode)
+              "l" '("line numbers" . display-line-numbers-mode)
+              "L" '("line numbers (global)" . global-display-line-numbers-mode)
+              "r" '("read-only" . read-only-mode)
+              "v" '("visual line mode" . visual-line-mode)
+              "V" '("visual line mode (global)" . global-visual-line-mode)
+              "w" '("whitespace display" . whitespace-mode)
+              "W" '("whitespace display (global)" . global-whitespace-mode))
 
-          (defvar tessera-code-package-maps nil
-            "Alist of (PREDICATE . KEYMAP) behind `p' in `tessera-code-map'.
-          PREDICATE is called without arguments in the current buffer; the
-          keymaps of all predicates returning non-nil are combined.")
+            (defvar tessera-code-package-maps nil
+              "Alist of (PREDICATE . KEYMAP) behind `p' in `tessera-code-map'.
+            PREDICATE is called without arguments in the current buffer; the
+            keymaps of all predicates returning non-nil are combined.")
 
-          (defun tessera-keymaps--package-map (_binding)
-            "Return the labelled package keymap for the current buffer, or nil."
-            (when-let* ((maps (seq-keep (pcase-lambda (`(,predicate . ,map))
-                                          (and (funcall predicate) map))
-                                        tessera-code-package-maps)))
-              (cons "packages" (make-composed-keymap maps))))
+            (defun tessera-keymaps--package-map (_binding)
+              "Return the labelled package keymap for the current buffer, or nil."
+              (when-let* ((maps (seq-keep (pcase-lambda (`(,predicate . ,map))
+                                            (and (funcall predicate) map))
+                                          tessera-code-package-maps)))
+                (cons "packages" (make-composed-keymap maps))))
 
-          (defvar-keymap tessera-code-map
-            :doc "Prefix keymap for working on code.
-          Eglot binds its commands here in the buffers it manages, language
-          features their utilities under `u' in their major modes, and `p'
-          leads to the package commands of the project at hand, see
-          `tessera-code-package-maps'."
-            "p" '(menu-item "packages" nil :filter tessera-keymaps--package-map))
-        '';
+            (defvar-keymap tessera-code-map
+              :doc "Prefix keymap for working on code.
+            Eglot binds its commands here in the buffers it manages, language
+            features their utilities under `u' in their major modes, and `p'
+            leads to the package commands of the project at hand, see
+            `tessera-code-package-maps'."
+              "p" '(menu-item "packages" nil :filter tessera-keymaps--package-map))
+          '';
       })
 
       {
-        programs.emacs.extraConfig = ''
-          (keymap-set mode-specific-map "${cfg.keys.app}" (cons "applications" tessera-app-map))
-          (keymap-set mode-specific-map "${cfg.keys.code}" (cons "code" tessera-code-map))
-          ;; Hide keys whose filter finds nothing, e.g. `C-c c p' outside a package
-          (with-eval-after-load 'which-key
-            (add-to-list 'which-key-replacement-alist '((nil . "\\`nil\\'") . t))
-            (advice-add 'which-key--format-and-replace :around #'tessera-keymaps--which-key-commands)
-            (keymap-set which-key-C-h-map "C-c" #'tessera-keymaps-which-key-toggle-commands)
-            (keymap-set which-key-C-h-map "c" #'tessera-keymaps-which-key-toggle-commands)
-            (setopt which-key-min-column-description-width 30)
-            (setq which-key-C-h-map-prompt
-                  (string-replace "toggle-docstrings,"
-                                  (concat "toggle-docstrings, \\[tessera-keymaps-which-key-toggle-commands]"
-                                          which-key-separator "toggle-commands,")
-                                  which-key-C-h-map-prompt)))
-          (keymap-set mode-specific-map "${cfg.keys.toggle}" (cons "toggles" tessera-toggle-map))
-          ;; After every feature set `prefix-help-command' (e.g. Embark's), so
-          ;; which-key takes over `C-h' in its popup and falls back to it
-          (add-hook 'after-init-hook #'which-key-mode)
-        '';
+        programs.emacs.extraConfig = # elisp
+          ''
+            (keymap-set mode-specific-map "${cfg.keys.app}" (cons "applications" tessera-app-map))
+            (keymap-set mode-specific-map "${cfg.keys.code}" (cons "code" tessera-code-map))
+            ;; Hide keys whose filter finds nothing, e.g. `C-c c p' outside a package
+            (with-eval-after-load 'which-key
+              (add-to-list 'which-key-replacement-alist '((nil . "\\`nil\\'") . t))
+              (advice-add 'which-key--format-and-replace :around #'tessera-keymaps--which-key-commands)
+              (keymap-set which-key-C-h-map "C-c" #'tessera-keymaps-which-key-toggle-commands)
+              (keymap-set which-key-C-h-map "c" #'tessera-keymaps-which-key-toggle-commands)
+              (setopt which-key-min-column-description-width 30)
+              (setq which-key-C-h-map-prompt
+                    (string-replace "toggle-docstrings,"
+                                    (concat "toggle-docstrings, \\[tessera-keymaps-which-key-toggle-commands]"
+                                            which-key-separator "toggle-commands,")
+                                    which-key-C-h-map-prompt)))
+            (keymap-set mode-specific-map "${cfg.keys.toggle}" (cons "toggles" tessera-toggle-map))
+            ;; After every feature set `prefix-help-command' (e.g. Embark's), so
+            ;; which-key takes over `C-h' in its popup and falls back to it
+            (add-hook 'after-init-hook #'which-key-mode)
+          '';
       }
     ];
 }
