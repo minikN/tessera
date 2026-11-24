@@ -28,6 +28,7 @@ mkFeature {
       |------|---------|-------------|
       | `C-c a` | applications | this feature (`keys.app`) |
       | `C-c c` | code | this feature (`keys.code`), filled by emacs.eglot and language features |
+      | `C-c c o` | structural navigation and editing | emacs.treesit |
       | `C-c t` | toggles | this feature (`keys.toggle`) |
       | `C-c w` | side windows | emacs.window-management |
       | `M-g` | go to (Emacs' `goto-map`) | Emacs, extended |

@@ -40,6 +40,8 @@ mkFeature {
 
       - the modes are the tree-sitter modes that ship with Emacs. The
         grammars come with this feature, so Emacs never asks to install them
+      - `features.emacs.treesit` enables Combobulate in JavaScript, TypeScript
+        and TSX tree-sitter buffers
       - Eglot starts the language server when the emacs.eglot feature is enabled
       - it supports the following runtimes: `node`, `deno` and `bun`
       - it supports the following package managers: `npm`, `pnpm`, `yarn`,
@@ -223,6 +225,11 @@ mkFeature {
                     (add-to-list 'auto-mode-alist '("\\.[jt]sx\\'" . js-jsx-mode))
                   ''
               }
+              ${lib.optionalString (treesit && config.features.emacs.treesit.enable) ''
+                (declare-function combobulate-mode "combobulate")
+                (add-hook 'js-ts-mode-hook #'combobulate-mode)
+                (add-hook 'typescript-ts-base-mode-hook #'combobulate-mode)
+              ''}
               (setopt js-indent-level 2)
               ${lib.optionalString config.features.emacs.eglot.enable ''
 
