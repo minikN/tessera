@@ -27,7 +27,7 @@ mkFeature {
         server proposes are applied without confirmation, files reached
         through go to definition (e.g. libraries) are managed too
       - The echo area shows an eldoc hint and a quick action hint.
-        Pressing `M-n` shows the hints if they are hidden and cycles
+        Pressing `M-d` shows the hints if they are hidden and cycles
         between them if there are multiple
       - Flymake runs only in trusted files under Emacs 31, so diagnostics need
         their directories in `trusted-content`, e.g.
@@ -53,7 +53,7 @@ mkFeature {
       | `M-.`, `M-?` | go to definition, find references |
       | `C-M-.` | find a symbol in the project |
       | `C-h .` | documentation at point |
-      | `M-n` | next documentation in the echo area |
+      | `M-d` | next documentation in the echo area |
       | `M-g f` | diagnostics (with the completion feature) |
       | `C-c c a` | code actions at point |
       | `C-c c f` | format the region or buffer |
@@ -241,7 +241,7 @@ mkFeature {
                           tessera-eglot-workspace-configuration-functions))
 
             (with-eval-after-load 'eglot
-              (keymap-set eglot-mode-map "M-n" #'tessera-eglot-next-doc)
+              (keymap-set eglot-mode-map "M-d" #'tessera-eglot-next-doc)
               (setq-default eglot-workspace-configuration #'tessera-eglot-workspace-configuration))
 
             (defun tessera-eglot-contact (servers &optional preset)
