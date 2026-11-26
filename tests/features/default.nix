@@ -1,5 +1,6 @@
 {
   lib,
+  platform,
   expect,
   check,
 }:
@@ -7,7 +8,8 @@
 ## Feature-specific checks. Each `<category>/<feature>.nix` here, mirroring
 ## `features/`, is a function of `lib`, `expect` and `check` (see
 ## `../hosts.nix`) that returns checks made with them, named
-## `<feature>-<name>`.
+## `<feature>-<name>`. Checks are included only when their `platform` matches
+## the current flake system.
 let
   files = builtins.filter (f: lib.hasSuffix ".nix" (toString f) && f != ./default.nix) (
     lib.filesystem.listFilesRecursive ./.
@@ -18,9 +20,14 @@ lib.mergeAttrsList (
     file:
     let
       feature = lib.removeSuffix ".nix" (baseNameOf file);
+      checks = import file {
+        inherit lib;
+        check = spec: if spec.platform == platform then check spec else null;
+        expect = spec: if spec.platform == platform then expect spec else null;
+      };
     in
     lib.mapAttrs' (name: check: lib.nameValuePair "${feature}-${name}" (check "${feature}-${name}")) (
-      import file { inherit lib expect check; }
+      lib.filterAttrs (_: check: check != null) checks
     )
   ) files
 )

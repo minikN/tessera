@@ -8,6 +8,7 @@
 ## Tessera's tests, as `checks.<system>.*`
 let
   pkgs' = pkgs.extend tessera.overlay;
+  platform = if pkgs.stdenv.hostPlatform.isDarwin then "darwin" else "nixos";
   hosts = import ./hosts.nix {
     inherit
       lib
@@ -19,7 +20,7 @@ let
 in
 hosts.checks
 // import ./features {
-  inherit lib;
+  inherit lib platform;
   inherit (hosts) expect check;
 }
 // lib.mapAttrs' (name: lib.nameValuePair "ert-${name}") (
