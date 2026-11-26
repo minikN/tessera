@@ -5,7 +5,7 @@
 }:
 
 mkElispPackage pkgs emacsPackages {
-  name = "combobulate-json5";
+  name = "tessera-combobulate-json5";
   summary = "JSON5 support for Combobulate";
   packageRequires = [
     (pkgs.tessera.emacs.combobulate.override { inherit emacsPackages; })

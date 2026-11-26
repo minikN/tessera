@@ -5,7 +5,7 @@
 }:
 
 mkElispPackage pkgs emacsPackages {
-  name = "combobulate-nix";
+  name = "tessera-combobulate-nix";
   summary = "Nix support for Combobulate";
   packageRequires = [
     (pkgs.tessera.emacs.combobulate.override { inherit emacsPackages; })

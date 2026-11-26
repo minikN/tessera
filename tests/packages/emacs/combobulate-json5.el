@@ -1,6 +1,6 @@
 ;;; combobulate-json5.el --- JSON5 Combobulate tests  -*- lexical-binding: t; -*-
 
-(require 'combobulate-json5)
+(require 'tessera-combobulate-json5)
 (require 'json5-ts-mode)
 
 (setq treesit-auto-install-grammar 'never)

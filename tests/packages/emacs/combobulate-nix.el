@@ -1,6 +1,6 @@
 ;;; combobulate-nix.el --- Nix Combobulate tests  -*- lexical-binding: t; -*-
 
-(require 'combobulate-nix)
+(require 'tessera-combobulate-nix)
 (require 'nix-ts-mode)
 
 (setq treesit-auto-install-grammar 'never)

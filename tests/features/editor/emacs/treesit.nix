@@ -11,8 +11,8 @@ let
     home: name: lib.findFirst (p: p.pname or "" == name) (throw "No ${name} package") (packages home);
   source = home: name: builtins.readFile (package home name).src;
   languageExtensions = {
-    json = "combobulate-json5";
-    nix = "combobulate-nix";
+    json = "tessera-combobulate-json5";
+    nix = "tessera-combobulate-nix";
   };
   languageOnly =
     language:
@@ -74,8 +74,8 @@ lib.mapAttrs' (
       let
         treesitSource = source home "tessera-treesit";
         keymapsSource = source home "tessera-keymaps";
-        json5CombobulateSource = source home "combobulate-json5";
-        nixCombobulateSource = source home "combobulate-nix";
+        json5CombobulateSource = source home "tessera-combobulate-json5";
+        nixCombobulateSource = source home "tessera-combobulate-nix";
         javascriptSource = source home "tessera-javascript";
         jsonSource = source home "tessera-json";
         nixSource = source home "tessera-nix";
@@ -123,6 +123,10 @@ lib.mapAttrs' (
           message = "Combobulate's prefix has a which-key description";
         }
         {
+          assertion = lib.hasInfix "(tessera-keymaps-describe-key map combobulate-key-prefix \"combobulate\")" treesitSource;
+          message = "Language-level Combobulate prefixes have which-key descriptions";
+        }
+        {
           assertion = lib.all (description: lib.hasInfix description treesitSource) commandDescriptions;
           message = "Every Combobulate command and submap has a which-key description";
         }
@@ -131,8 +135,12 @@ lib.mapAttrs' (
           message = "Every language's envelope prefix has a which-key description";
         }
         {
-          assertion = lib.hasInfix "(keymap-set map key envelope-map)" treesitSource;
+          assertion = lib.hasInfix "(keymap-set map (concat combobulate-key-prefix \" e\") envelope-map)" treesitSource;
           message = "Envelope prefixes use Tessera's configured Combobulate prefix";
+        }
+        {
+          assertion = lib.hasInfix "(keymap-unset map \"C-c o\" t)" treesitSource;
+          message = "Combobulate's default envelope prefix is removed";
         }
         {
           assertion = lib.hasInfix "(advice-add 'combobulate-define-envelope :after" treesitSource;
@@ -143,7 +151,7 @@ lib.mapAttrs' (
           message = "Incompatible optional TSX highlighting is disabled";
         }
         {
-          assertion = lib.hasInfix "(require 'combobulate-json5)" treesitSource;
+          assertion = lib.hasInfix "(require 'tessera-combobulate-json5)" treesitSource;
           message = "treesit loads the JSON5 extension";
         }
         {
@@ -151,7 +159,7 @@ lib.mapAttrs' (
           message = "The JSON5 package registers its Combobulate language";
         }
         {
-          assertion = lib.hasInfix "(require 'combobulate-nix)" treesitSource;
+          assertion = lib.hasInfix "(require 'tessera-combobulate-nix)" treesitSource;
           message = "treesit loads the Nix extension";
         }
         {
@@ -245,6 +253,14 @@ lib.mapAttrs' (
         {
           assertion = lib.hasInfix "(setq combobulate-key-prefix \"C-c c o\")" treesitSource;
           message = "Combobulate keeps its command prefix when keymaps are disabled";
+        }
+        {
+          assertion = lib.hasInfix "(keymap-set map (concat combobulate-key-prefix \" e\") envelope-map)" treesitSource;
+          message = "Envelope prefixes use Tessera's prefix without keymaps";
+        }
+        {
+          assertion = lib.hasInfix "(keymap-unset map \"C-c o\" t)" treesitSource;
+          message = "Combobulate's default envelope prefix is removed without keymaps";
         }
       ];
   };

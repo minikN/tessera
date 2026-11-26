@@ -27,11 +27,11 @@ let
     pkgs.runCommandLocal "test-${name}" { } # bash
       ''
         export HOME=$TMPDIR
-        cp ${package}/share/emacs/site-lisp/elpa/*/tessera-${name}.el $TMPDIR
-        chmod u+w $TMPDIR/tessera-${name}.el
+        cp ${package}/share/emacs/site-lisp/elpa/*/${package.pname}.el $TMPDIR
+        chmod u+w $TMPDIR/${package.pname}.el
         ${emacs}/bin/emacs --batch --eval '(package-activate-all)' \
           --eval '(setq byte-compile-error-on-warn t)' \
-          -f batch-byte-compile $TMPDIR/tessera-${name}.el
+          -f batch-byte-compile $TMPDIR/${package.pname}.el
         ${lib.concatMapStrings (shell: ''
           echo "shell-file-name: ${shell}"
           PATH=/bin ${emacs}/bin/emacs --batch --eval '(package-activate-all)' \
@@ -42,6 +42,16 @@ let
       '';
 in
 {
+  combobulate-json5 = ert "combobulate-json5" {
+    grammars = g: [ g.tree-sitter-json5 ];
+    elispPackages = epkgs: [ epkgs.json5-ts-mode ];
+  };
+
+  combobulate-nix = ert "combobulate-nix" {
+    grammars = g: [ g.tree-sitter-nix ];
+    elispPackages = epkgs: [ epkgs.nix-ts-mode ];
+  };
+
   javascript-utils = ert "javascript-utils" {
     grammars = g: [
       g.tree-sitter-javascript

@@ -99,10 +99,10 @@ mkFeature {
               (require 'combobulate)
 
               ${lib.optionalString config.features.json.enable ''
-                (require 'combobulate-json5)
+                (require 'tessera-combobulate-json5)
               ''}
               ${lib.optionalString config.features.nix.enable ''
-                (require 'combobulate-nix)
+                (require 'tessera-combobulate-nix)
               ''}
 
               ${lib.optionalString config.features.emacs.keymaps.enable ''
