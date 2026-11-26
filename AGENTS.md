@@ -15,7 +15,7 @@ Primary implementation languages are Nix and Emacs Lisp embedded in Nix strings.
 3. `lib/discover.nix` imports every `.nix` file below a feature or host directory. No central feature import list exists. Feature files receive `lib`, `mkFeature`, `mkElispConfig`, and `tessera` (`types`, `mkDocs`, and the discovered feature records).
 4. `lib/mk-feature.nix` turns each feature declaration into a common options/globals module, optional platform modules, support checks, and documentation metadata.
 5. `lib/mk-flake.nix` combines built-in and consumer features, merges inputs (consumer inputs win), discovers hosts, and calls `mkHost` for each one.
-6. `lib/mk-host.nix` builds the system configuration and, unless `homeManager = false`, a standalone Home Manager configuration. Both system-embedded and standalone Home Manager use the same home modules.
+6. `lib/mk-host.nix` builds the system configuration and, unless `homeManager = false`, a standalone Home Manager configuration. Both system-embedded and standalone Home Manager use the same home modules. Home Manager requires `globals.user`; a system-only host without it defaults the user feature off. Explicitly enabling a home-only feature with `homeManager = false` is an assertion failure.
 
 The resulting consumer outputs are `nixosConfigurations.<host>`, `darwinConfigurations.<host>`, and `homeConfigurations.<host>`. Host platform is inferred from `system` (`darwin` in the string selects nix-darwin). Host filenames, without `.nix`, become host names.
 
@@ -78,7 +78,7 @@ Important invariants:
 - Put feature options in the top-level `options` block, not in platform bodies. Platform bodies may return configuration and `imports`.
 - `options` and `globals` are **not** automatically gated by the feature's enable flag. Gate global values with `lib.mkIf config.features.<name>.enable` where needed, especially before evaluating platform-specific packages.
 - Platform support is derived from available blocks and package availability. A `home` block supports both system platforms. `platforms` can only narrow this. Explicitly enabling an unsupported feature is an assertion failure; an unsupported default-enabled feature is left alone.
-- A home module must work in both embedded and standalone Home Manager. Do not use NixOS or nix-darwin options in it.
+- A home module must work in both embedded and standalone Home Manager. Do not use NixOS or nix-darwin options in it. Home modules are omitted with `homeManager = false`; explicitly enabling a feature that has only a home module in that case is an assertion failure.
 - Host `features` may be an attrset or a module function when it needs `config`, `pkgs`, or other module arguments. Host-specific `nixos`, `darwin`, and `home` modules are appended after feature modules.
 
 ## Cross-feature design
@@ -126,9 +126,10 @@ These are evaluation checks, not full system builds. Failed assertions **and war
 Feature-specific tests go in `tests/features/<category>/<feature>.nix`, mirroring the feature path. They are discovered automatically and use:
 
 - `expect` for required assertion or warning messages;
-- `check` for a cleanly evaluating host plus custom assertions about system and home configuration.
+- `check` for a cleanly evaluating host plus custom assertions about system and home configuration;
+- `emacsCheck` for building the host's final Emacs package and running a behavioral Elisp `script` against the generated configuration.
 
-Each feature check declares its `platform`. Discovery includes it only when that platform matches the current flake system, so Linux jobs do not evaluate Darwin-only feature checks and macOS jobs do not evaluate NixOS-only feature checks.
+Use the `platform` argument passed to each feature test file for platform-neutral checks so they run on both Linux and macOS. Hard-code `platform = "nixos"` or `"darwin"` only for genuinely OS-specific checks. Discovery includes a check only when its declared platform matches the current flake system, so one OS never tries to realize the other's generated files. Prefer behavioral assertions over searching generated source for strings; package-selection assertions belong in `check`, while Emacs behavior belongs in `emacsCheck` or ERT.
 
 Emacs package tests have two parts: an ERT file `tests/packages/emacs/<name>.el` and explicit registration in `tests/packages/emacs/default.nix`, which also byte-compiles the package. Unlike feature tests, ERT registration is not automatic.
 

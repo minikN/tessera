@@ -106,12 +106,14 @@ documentation to Emacs as an Info manual: `C-h i m Tessera`.
    - `nixosConfigurations.<host>` *or* `darwinConfigurations.<host>` —
      dispatched on `system` (anything containing `darwin` → nix-darwin, else
      NixOS).
-   - `homeConfigurations.<host>` — a standalone `homeManagerConfiguration`
-     built from the *same* home modules that the system config embeds.
+   - `homeConfigurations.<host>` — unless `homeManager = false`, a standalone
+     `homeManagerConfiguration` built from the *same* home modules that the
+     system config embeds.
 
-So every host gets both an embedded path (`{nixos,darwin}-rebuild switch`,
-system + home together) and a standalone path (`home-manager switch`, home
-only) for free.
+By default, every host gets both an embedded path (`{nixos,darwin}-rebuild
+switch`, system + home together) and a standalone path (`home-manager switch`,
+home only). With `homeManager = false`, only the system configuration is built;
+neither embedded nor standalone Home Manager is configured.
 
 Modules receive `inputs` (tessera's inputs merged with yours, yours win)
 and `globals` as special arguments.
@@ -120,6 +122,19 @@ and `globals` as special arguments.
 
 A host file is a plain attrset. The filename (without `.nix`) is the host
 name. The only required key is `system`; the platform is inferred from it.
+`homeManager` defaults to `true`. Set it to `false` for a system-only host:
+
+```nix
+{
+  system = "x86_64-linux";
+  homeManager = false;
+}
+```
+
+Home Manager requires `globals.user`. For a system-only host without
+`globals.user`, the `user` feature defaults to disabled instead of creating a
+fallback account. Explicitly enabling a home-only feature with
+`homeManager = false` is an error.
 
 ```nix
 # hosts/slimboy.nix
@@ -221,8 +236,10 @@ Enable it on any host with `features.fish.enable = true;`.
 Each block's body is automatically wrapped in
 `mkIf config.features.<name>.enable`, so you don't gate it yourself. The
 `home` block runs in *both* the embedded home-manager (inside the system
-config) and the standalone `homeConfigurations.<host>` output — keep it
-free of system-level options.
+config) and the standalone `homeConfigurations.<host>` output when
+`homeManager` is enabled — keep it free of system-level options. It is not
+included with `homeManager = false`; explicitly enabling a feature that has
+only a `home` block in that case is an error.
 
 ### Platforms
 A feature supports Home, NixOS and macOS where it has a
@@ -276,7 +293,11 @@ Two layers, both reachable as `config.globals.*`:
 
 1. **User constants** — whatever is in your `globals`, copied verbatim into
    `config.globals.user`. So `config.globals.user.user`,
-   `config.globals.user.email`, `config.globals.user.gpgKey`, etc.
+   `config.globals.user.email`, `config.globals.user.gpgKey`, etc. `globals`
+   is optional for system-only hosts; Home Manager requires `globals.user`.
+   `globals.stateVersion` sets the state version of NixOS and Home Manager;
+   without it, set `nixos.system.stateVersion` and `home.home.stateVersion`
+   in the host.
 
 2. **Framework/feature globals** — declared as options in
    `lib/globals-options.nix`:
