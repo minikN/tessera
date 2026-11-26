@@ -30,7 +30,10 @@ let
     ) (host.hardware or [ ]);
   };
 
-  user = globals.user;
+  ## Only used with Home Manager
+  user =
+    globals.user
+      or (throw "host ${name}: globals.user is required when Home Manager is enabled; set globals.user or homeManager = false.");
 
   globalsOptionsModule = import ./globals-options.nix;
 
@@ -56,8 +59,26 @@ let
       ...
     }:
     {
-      assertions = builtins.concatMap (f: f.checks platform { inherit config options pkgs; }) features;
+      assertions =
+        builtins.concatMap (f: f.checks platform { inherit config options pkgs; }) features
+        ++ lib.concatMap (
+          f:
+          let
+            path = [ "features" ] ++ lib.toList f.name;
+            enablePath = path ++ [ "enable" ];
+            enabled = lib.getAttrFromPath enablePath config;
+            explicit = (lib.getAttrFromPath enablePath options).highestPrio < 1500;
+          in
+          lib.optional (f.homeOnly) {
+            assertion = homeManager || !(enabled && explicit);
+            message = "features.${lib.concatStringsSep "." (lib.toList f.name)} requires Home Manager; set homeManager = true or disable the feature.";
+          }
+        ) features;
     };
+
+  defaultUserModule = {
+    config.features.user.enable = mkDefault (globals ? user);
+  };
 
   filterNonNull = builtins.filter (m: m != null);
 
@@ -70,8 +91,8 @@ let
     globalsOptionsModule
     staticGlobalsModule
     hostFeaturesModule
-    { home.stateVersion = mkDefault globals.stateVersion; }
   ]
+  ++ lib.optional (globals ? stateVersion) { home.stateVersion = mkDefault globals.stateVersion; }
   ++ commonFeatureModules
   ++ homeFeatureModules
   ++ [ hostHome ];
@@ -87,6 +108,7 @@ let
     globalsOptionsModule
     staticGlobalsModule
     hostFeaturesModule
+    defaultUserModule
     {
       nixpkgs.config.allowUnfree = true;
       nixpkgs.overlays = [ overlay ];
@@ -128,15 +150,17 @@ let
 
   homeConfig =
     if homeManager then
-      inputs.home-manager.lib.homeManagerConfiguration {
-        pkgs = import inputs.nixpkgs {
-          inherit system;
-          config.allowUnfree = true;
-          overlays = [ overlay ];
-        };
-        extraSpecialArgs = { inherit inputs globals; };
-        modules = homeModules;
-      }
+      builtins.seq user (
+        inputs.home-manager.lib.homeManagerConfiguration {
+          pkgs = import inputs.nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+            overlays = [ overlay ];
+          };
+          extraSpecialArgs = { inherit inputs globals; };
+          modules = homeModules;
+        }
+      )
     else
       null;
 in
