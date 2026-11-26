@@ -183,7 +183,7 @@ mkFeature {
                             t
                           (seq-union treesit-enabled-modes '(json-ts-mode))))
                 ${lib.optionalString (treesit && config.features.emacs.treesit.enable) ''
-                  (declare-function combobulate-mode "combobulate")
+                  (autoload 'combobulate-mode "combobulate" nil t)
                   (add-hook 'json-ts-mode-hook #'combobulate-mode)
                   (add-hook 'json5-ts-mode-hook #'combobulate-mode)
                 ''}

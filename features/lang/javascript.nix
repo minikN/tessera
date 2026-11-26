@@ -226,7 +226,7 @@ mkFeature {
                   ''
               }
               ${lib.optionalString (treesit && config.features.emacs.treesit.enable) ''
-                (declare-function combobulate-mode "combobulate")
+                (autoload 'combobulate-mode "combobulate" nil t)
                 (add-hook 'js-ts-mode-hook #'combobulate-mode)
                 (add-hook 'typescript-ts-base-mode-hook #'combobulate-mode)
               ''}

@@ -76,10 +76,8 @@ mkFeature {
           elispPackages =
             epkgs:
             with epkgs;
-            [
-              nix-mode
-              polymode
-            ]
+            [ polymode ]
+            ++ lib.optionals (!treesit) [ nix-mode ]
             ++ lib.optionals treesit [
               nix-ts-mode
               (treesit-grammars.with-grammars (g: with g; [ tree-sitter-nix ]))
@@ -109,7 +107,7 @@ mkFeature {
               (add-to-list 'auto-mode-alist '("\\.nix\\'" . tessera-nix-polymode))
 
               ${lib.optionalString (treesit && config.features.emacs.treesit.enable) ''
-                (declare-function combobulate-mode "combobulate")
+                (autoload 'combobulate-mode "combobulate" nil t)
                 (add-hook 'nix-ts-mode-hook #'combobulate-mode)
               ''}
               ${lib.optionalString config.features.emacs.eglot.enable ''
