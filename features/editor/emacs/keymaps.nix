@@ -22,7 +22,9 @@ mkFeature {
       Tessera's own keys all start with `C-c` followed by a letter, the only
       key sequences Emacs reserves for users, so no major or minor mode ever
       shadows them.
-      This feature defines the shared keymaps and turns on which-key.
+      This feature defines the shared keymaps and turns on which-key. Features
+      can use `tessera-keymaps-describe-key` to describe an existing binding
+      without changing the command or keymap it invokes.
 
       | Keys | Purpose | Provided by |
       |------|---------|-------------|
@@ -107,6 +109,13 @@ mkFeature {
               :group 'tessera-keymaps)
 
             (defvar which-key-max-description-length)
+
+            (defun tessera-keymaps-describe-key (map key description)
+              "Add which-key DESCRIPTION to KEY's existing binding in MAP."
+              (let ((binding (lookup-key map (kbd key))))
+                (unless binding
+                  (error "No binding for key `%s'" key))
+                (keymap-set map key (cons description binding))))
 
             (defun tessera-keymaps--which-key-commands (format unformatted &rest args)
               "Call FORMAT, `which-key--format-and-replace', maybe with commands.
