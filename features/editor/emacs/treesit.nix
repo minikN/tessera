@@ -105,6 +105,13 @@ mkFeature {
                 (require 'tessera-combobulate-nix)
               ''}
 
+              (dolist (registration combobulate-registered-languages-alist)
+                (let* ((language (car registration))
+                       (map (symbol-value (combobulate-get 'map language)))
+                       (envelope-map (symbol-value (combobulate-get 'envelope-map language))))
+                  (keymap-unset map "C-c o" t)
+                  (keymap-set map (concat combobulate-key-prefix " e") envelope-map)))
+
               ${lib.optionalString config.features.emacs.keymaps.enable ''
                 (declare-function tessera-keymaps-describe-key "tessera-keymaps")
 
@@ -164,12 +171,10 @@ mkFeature {
                                                     "r" "build query from root to point")
 
                 (dolist (registration combobulate-registered-languages-alist)
-                  (let* ((language (car registration))
-                         (map (symbol-value (combobulate-get 'map language)))
-                         (envelope-map (symbol-value (combobulate-get 'envelope-map language)))
-                         (key (concat combobulate-key-prefix " e")))
-                    (keymap-set map key envelope-map)
-                    (tessera-keymaps-describe-key map key "envelop")))
+                  (let ((map (symbol-value (combobulate-get 'map (car registration)))))
+                    (tessera-keymaps-describe-key map combobulate-key-prefix "combobulate")
+                    (tessera-keymaps-describe-key
+                     map (concat combobulate-key-prefix " e") "envelop")))
 
                 (tessera-keymaps-describe-key combobulate-key-map
                                                combobulate-key-prefix "combobulate"))
