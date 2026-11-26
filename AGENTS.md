@@ -6,7 +6,7 @@ Tessera is a Nix flake library for composing NixOS, nix-darwin, and Home Manager
 
 The public usage and option examples live in `README.md`. This file focuses on implementation structure and invariants. Keep both documents and feature `doc` blocks in sync with public behavior.
 
-Primary implementation languages are Nix and Emacs Lisp embedded in Nix strings. Format Nix with the flake formatter (`nix fmt`, using `nixfmt-tree`).
+Primary implementation languages are Nix and Emacs Lisp embedded in Nix strings. Format Nix with the flake formatter (`nix fmt`, using `nixfmt-tree`). Mark Nix indented strings containing another language with a `# <lang>` comment immediately before the opening `''`, such as `config = # elisp` or `script = # bash`, so polymode selects the correct mode. This applies to new and edited inline code blocks, including embedded Emacs Lisp and shell code.
 
 ## Evaluation flow
 
@@ -98,11 +98,15 @@ Nested features are different: their parent is a hard requirement enforced by `m
 
 For keybindings that may be either attrsets or functions, use `tessera.types.keybindings` and apply the resulting function once with the documented parameters. See `features/wm/sway.nix` and `features/wm/aerospace.nix`.
 
+Every keybinding shown by which-key, including all `C-c` commands and prefixes, must have a concise human-readable description. Use `("description" . command)` or a labelled prefix keymap when declaring a binding. To describe an existing binding without changing its command, use `tessera-keymaps-describe-key` from `emacs.keymaps`; call it only when that feature is enabled and defer the integration with `with-eval-after-load 'tessera-keymaps`. Bindings created dynamically must be described when they are created. The underlying keybindings must continue to work when `emacs.keymaps` is disabled.
+
 ## Packages, Emacs, and docs
 
 `packages/<category>/<name>.nix` is discovered by `packagesFromDirectoryRecursive`. The overlay exposes it as `pkgs.tessera.<category>.<name>`; the flake also exposes it as `packages.<system>.<category>-<name>`. No separate package import list is needed.
 
 Use `mkElispPackage` for standalone generated Emacs packages and `mkElispConfig` inside home modules to add packages, `require` forms, dependencies, and early-init code. Override generated packages with the active Emacs package set when composing them, as the language features do.
+
+For packages we create, always prefix the package `name`/`pname` with `tessera-`; keep source filenames and overlay attributes unprefixed. For example, `packages/emacs/json-utils.nix` sets `name = "tessera-json-utils"` and is exposed as `pkgs.tessera.emacs.json-utils`. Third-party packages such as `combobulate.nix` retain their upstream names.
 
 Emacs checks byte-compile with warnings as errors and run with a minimal `PATH`. External executables in generated Elisp must therefore use Nix store paths rather than relying on interactive shell lookup.
 
