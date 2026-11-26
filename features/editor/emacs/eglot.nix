@@ -27,8 +27,10 @@ mkFeature {
         server proposes are applied without confirmation, files reached
         through go to definition (e.g. libraries) are managed too
       - The echo area shows an eldoc hint and a quick action hint.
-        Pressing `M-d` shows the hints if they are hidden and cycles
+        Pressing `C-c c d` shows the hints if they are hidden and cycles
         between them if there are multiple
+      - Edits in polymode inner buffers are forwarded to the language server,
+        so formatting cannot revert them and diagnostics keep their positions
       - Flymake runs only in trusted files under Emacs 31, so diagnostics need
         their directories in `trusted-content`, e.g.
         `(setopt trusted-content '("~/src/"))`
@@ -53,7 +55,7 @@ mkFeature {
       | `M-.`, `M-?` | go to definition, find references |
       | `C-M-.` | find a symbol in the project |
       | `C-h .` | documentation at point |
-      | `M-d` | next documentation in the echo area |
+      | `C-c c d` | next documentation in the echo area |
       | `M-g f` | diagnostics (with the completion feature) |
       | `C-c c a` | code actions at point |
       | `C-c c f` | format the region or buffer |
@@ -240,9 +242,18 @@ mkFeature {
               (seq-mapcat (lambda (function) (funcall function server))
                           tessera-eglot-workspace-configuration-functions))
 
+            (defvar polymode-run-these-before-change-functions-in-other-buffers)
+            (defvar polymode-run-these-after-change-functions-in-other-buffers)
+
             (with-eval-after-load 'eglot
-              (keymap-set eglot-mode-map "M-d" #'tessera-eglot-next-doc)
               (setq-default eglot-workspace-configuration #'tessera-eglot-workspace-configuration))
+
+            (with-eval-after-load 'polymode
+              (with-eval-after-load 'eglot
+                (add-to-list 'polymode-run-these-before-change-functions-in-other-buffers
+                             'eglot--before-change)
+                (add-to-list 'polymode-run-these-after-change-functions-in-other-buffers
+                             'eglot--after-change)))
 
             (defun tessera-eglot-contact (servers &optional preset)
               "Return an Eglot contact for SERVERS, a list of language server commands.
@@ -314,6 +325,7 @@ mkFeature {
             (defvar-keymap tessera-eglot-map
               :doc "Keymap of Eglot commands for the buffers it manages."
               "a" '("code actions (point)" . eglot-code-actions)
+              "d" '("next documentation" . tessera-eglot-next-doc)
               "f" '("format" . eglot-format)
               "i" '("go to implementation" . eglot-find-implementation)
               "q" '("quick fix" . eglot-code-action-quickfix)
