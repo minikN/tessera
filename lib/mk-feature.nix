@@ -142,6 +142,7 @@ in
     checks
     commonModule
     ;
+  homeOnly = home != null && nixos == null && darwin == null;
   nixosModule = if nixos == null then null else mkBody nixos;
   darwinModule = if darwin == null then null else mkBody darwin;
   homeModule = if home == null then null else mkBody home;
