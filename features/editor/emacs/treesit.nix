@@ -27,9 +27,9 @@ mkFeature {
       This feature needs `features.emacs.package` built with tree-sitter. It
       enhances the usual structural navigation and editing commands rather than
       replacing Tessera's keymaps. `C-c c o` holds Combobulate's own commands;
-      `C-c c o o` opens its transient menu. With `emacs.keymaps`, all prefixes
-      and commands under `C-c c o`, including envelope templates, have
-      which-key descriptions.
+      `C-c c o o` opens its transient menu and `C-c c o e` holds the envelope
+      templates. With `emacs.keymaps`, all prefixes and commands under
+      `C-c c o`, including envelope templates, have which-key descriptions.
 
       | Keys | Command |
       |------|---------|
@@ -110,7 +110,8 @@ mkFeature {
                        (map (symbol-value (combobulate-get 'map language)))
                        (envelope-map (symbol-value (combobulate-get 'envelope-map language))))
                   (keymap-unset map "C-c o" t)
-                  (keymap-set map (concat combobulate-key-prefix " e") envelope-map)))
+                  (when (combobulate-read envelope-list language)
+                    (keymap-set map (concat combobulate-key-prefix " e") envelope-map))))
 
               ${lib.optionalString config.features.emacs.keymaps.enable ''
                 (declare-function tessera-keymaps-describe-key "tessera-keymaps")
@@ -119,65 +120,58 @@ mkFeature {
                   "Add which-key descriptions to the envelope bindings defined by ARGS."
                   (tessera-keymaps-describe-key
                    (combobulate-read envelope-map)
-                   (plist-get args :key) (plist-get args :description))
+                   (key-description (kbd (plist-get args :key)))
+                   (plist-get args :description))
                   (when (plist-get args :extra-key)
                     (tessera-keymaps-describe-key
                      (combobulate-read map)
-                     (plist-get args :extra-key) (plist-get args :description))))
+                     (key-description (kbd (plist-get args :extra-key)))
+                     (plist-get args :description))))
 
                 (with-eval-after-load 'tessera-keymaps
-                (advice-add 'combobulate-define-envelope :after
-                            #'tessera-combobulate--describe-envelope)
+                  (advice-add 'combobulate-define-envelope :after
+                              #'tessera-combobulate--describe-envelope)
 
-                (tessera-keymaps-describe-key combobulate-options-key-map
-                                                    "o" "open command menu")
-                (tessera-keymaps-describe-key combobulate-options-key-map
-                                                    "c" "clone node")
-                (tessera-keymaps-describe-key combobulate-options-key-map
-                                                    "t" "bulk edit")
-                (tessera-keymaps-describe-key combobulate-options-key-map
-                                                    "x" "xref")
-                (tessera-keymaps-describe-key combobulate-options-key-map
-                                                    "h" "highlight")
-                (tessera-keymaps-describe-key combobulate-options-key-map
-                                                    "B" "query builder")
+                  (dolist (map-descriptions
+                           '((combobulate-options-key-map
+                              ("o" . "open command menu")
+                              ("c" . "clone node")
+                              ("t" . "bulk edit")
+                              ("x" . "xref")
+                              ("h" . "highlight")
+                              ("B" . "query builder"))
+                             (combobulate-cursor-edit-key-map
+                              ("c" . "edit sequence")
+                              ("t" . "edit nodes by type")
+                              ("x" . "edit nodes by text")
+                              ("s" . "edit sibling nodes")
+                              ("q" . "edit query matches"))
+                             (combobulate-xref-key-map
+                              ("b" . "find query references in buffer"))
+                             (combobulate-highlight-key-map
+                              ("h" . "highlight node at point")
+                              ("q" . "highlight query matches")
+                              ("c" . "clear highlights"))
+                             (combobulate-query-key-map
+                              ("q" . "open query builder")
+                              ("p" . "build match query for node at point")
+                              ("r" . "build query from root to point"))))
+                    (dolist (description (cdr map-descriptions))
+                      (tessera-keymaps-describe-key
+                       (symbol-value (car map-descriptions))
+                       (car description)
+                       (cdr description))))
 
-                (tessera-keymaps-describe-key combobulate-cursor-edit-key-map
-                                                    "c" "edit sequence")
-                (tessera-keymaps-describe-key combobulate-cursor-edit-key-map
-                                                    "t" "edit nodes by type")
-                (tessera-keymaps-describe-key combobulate-cursor-edit-key-map
-                                                    "x" "edit nodes by text")
-                (tessera-keymaps-describe-key combobulate-cursor-edit-key-map
-                                                    "s" "edit sibling nodes")
-                (tessera-keymaps-describe-key combobulate-cursor-edit-key-map
-                                                    "q" "edit query matches")
+                  (dolist (registration combobulate-registered-languages-alist)
+                    (let* ((language (car registration))
+                           (map (symbol-value (combobulate-get 'map language))))
+                      (tessera-keymaps-describe-key map combobulate-key-prefix "combobulate")
+                      (when (combobulate-read envelope-list language)
+                        (tessera-keymaps-describe-key
+                         map (concat combobulate-key-prefix " e") "envelop"))))
 
-                (tessera-keymaps-describe-key combobulate-xref-key-map
-                                                    "b" "find query references in buffer")
-
-                (tessera-keymaps-describe-key combobulate-highlight-key-map
-                                                    "h" "highlight node at point")
-                (tessera-keymaps-describe-key combobulate-highlight-key-map
-                                                    "q" "highlight query matches")
-                (tessera-keymaps-describe-key combobulate-highlight-key-map
-                                                    "c" "clear highlights")
-
-                (tessera-keymaps-describe-key combobulate-query-key-map
-                                                    "q" "open query builder")
-                (tessera-keymaps-describe-key combobulate-query-key-map
-                                                    "p" "build match query for node at point")
-                (tessera-keymaps-describe-key combobulate-query-key-map
-                                                    "r" "build query from root to point")
-
-                (dolist (registration combobulate-registered-languages-alist)
-                  (let ((map (symbol-value (combobulate-get 'map (car registration)))))
-                    (tessera-keymaps-describe-key map combobulate-key-prefix "combobulate")
-                    (tessera-keymaps-describe-key
-                     map (concat combobulate-key-prefix " e") "envelop")))
-
-                (tessera-keymaps-describe-key combobulate-key-map
-                                               combobulate-key-prefix "combobulate"))
+                  (tessera-keymaps-describe-key
+                   combobulate-key-map combobulate-key-prefix "combobulate"))
               ''}
 
               ;; These optional highlighting queries target older grammars.
