@@ -1,8 +1,8 @@
-{ expect, ... }:
+{ platform, expect, ... }:
 
 {
   without-tree-sitter = expect {
-    platform = "darwin";
+    platform = platform;
     features =
       { pkgs, ... }:
       {

@@ -21,7 +21,7 @@ in
 hosts.checks
 // import ./features {
   inherit lib platform;
-  inherit (hosts) expect check;
+  inherit (hosts) expect check emacsCheck;
 }
 // lib.mapAttrs' (name: lib.nameValuePair "ert-${name}") (
   import ./packages/emacs {

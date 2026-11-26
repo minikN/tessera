@@ -1,15 +1,14 @@
 {
   lib,
+  platform,
   expect,
   check,
+  emacsCheck,
   ...
 }:
 
 let
   packages = home: home.programs.emacs.finalPackage.explicitRequires;
-  package =
-    home: name: lib.findFirst (p: p.pname or "" == name) (throw "No ${name} package") (packages home);
-  source = home: name: builtins.readFile (package home name).src;
   languageExtensions = {
     json = "tessera-combobulate-json5";
     nix = "tessera-combobulate-nix";
@@ -21,7 +20,7 @@ let
       otherExtensions = lib.attrValues (removeAttrs languageExtensions [ language ]);
     in
     check {
-      platform = "darwin";
+      platform = platform;
       features = {
         emacs.enable = true;
         emacs.treesit.enable = true;
@@ -29,37 +28,24 @@ let
       };
       assertions =
         { home, ... }:
-        let
-          treesitSource = source home "tessera-treesit";
-        in
         [
           {
             assertion = lib.any (p: p.pname or "" == extension) (packages home);
             message = "${language} installs ${extension}";
           }
-          {
-            assertion = lib.hasInfix "(require '${extension})" treesitSource;
-            message = "${language} loads ${extension}";
-          }
         ]
-        ++ lib.concatMap (otherExtension: [
-          {
-            assertion = !(lib.any (p: p.pname or "" == otherExtension) (packages home));
-            message = "${language} does not install ${otherExtension}";
-          }
-          {
-            assertion = !(lib.hasInfix "(require '${otherExtension})" treesitSource);
-            message = "${language} does not load ${otherExtension}";
-          }
-        ]) otherExtensions;
+        ++ map (otherExtension: {
+          assertion = !(lib.any (p: p.pname or "" == otherExtension) (packages home));
+          message = "${language} does not install ${otherExtension}";
+        }) otherExtensions;
     };
 in
 lib.mapAttrs' (
   language: _: lib.nameValuePair "${language}-only" (languageOnly language)
 ) languageExtensions
 // {
-  wiring = check {
-    platform = "darwin";
+  wiring = emacsCheck {
+    platform = platform;
     features = {
       emacs.enable = true;
       emacs.eglot.enable = true;
@@ -69,141 +55,116 @@ lib.mapAttrs' (
       json.enable = true;
       nix.enable = true;
     };
-    assertions =
-      { home, ... }:
-      let
-        treesitSource = source home "tessera-treesit";
-        keymapsSource = source home "tessera-keymaps";
-        json5CombobulateSource = source home "tessera-combobulate-json5";
-        nixCombobulateSource = source home "tessera-combobulate-nix";
-        javascriptSource = source home "tessera-javascript";
-        jsonSource = source home "tessera-json";
-        nixSource = source home "tessera-nix";
-        eglotSource = source home "tessera-eglot";
-        commandDescriptions = [
-          "\"o\" \"open command menu\""
-          "\"c\" \"clone node\""
-          "\"t\" \"bulk edit\""
-          "\"x\" \"xref\""
-          "\"h\" \"highlight\""
-          "\"B\" \"query builder\""
-          "\"c\" \"edit sequence\""
-          "\"t\" \"edit nodes by type\""
-          "\"x\" \"edit nodes by text\""
-          "\"s\" \"edit sibling nodes\""
-          "\"q\" \"edit query matches\""
-          "\"b\" \"find query references in buffer\""
-          "\"h\" \"highlight node at point\""
-          "\"q\" \"highlight query matches\""
-          "\"c\" \"clear highlights\""
-          "\"q\" \"open query builder\""
-          "\"p\" \"build match query for node at point\""
-          "\"r\" \"build query from root to point\""
-        ];
-      in
-      [
-        {
-          assertion = lib.any (p: p.pname or "" == "combobulate") (packages home);
-          message = "treesit installs Combobulate";
-        }
-        {
-          assertion = lib.hasInfix "(setq combobulate-key-prefix \"C-c c o\")" treesitSource;
-          message = "Combobulate uses the code prefix";
-        }
-        {
-          assertion = lib.hasInfix "(defun tessera-keymaps-describe-key" keymapsSource;
-          message = "The keymaps feature provides the shared description helper";
-        }
-        {
-          assertion = lib.hasInfix "(with-eval-after-load 'tessera-keymaps" treesitSource;
-          message = "Treesit loads descriptions through the keymaps integration";
-        }
-        {
-          assertion = lib.hasInfix "combobulate-key-prefix \"combobulate\")" treesitSource;
-          message = "Combobulate's prefix has a which-key description";
-        }
-        {
-          assertion = lib.hasInfix "(tessera-keymaps-describe-key map combobulate-key-prefix \"combobulate\")" treesitSource;
-          message = "Language-level Combobulate prefixes have which-key descriptions";
-        }
-        {
-          assertion = lib.all (description: lib.hasInfix description treesitSource) commandDescriptions;
-          message = "Every Combobulate command and submap has a which-key description";
-        }
-        {
-          assertion = lib.hasInfix "(dolist (registration combobulate-registered-languages-alist)" treesitSource;
-          message = "Every language's envelope prefix has a which-key description";
-        }
-        {
-          assertion = lib.hasInfix "(keymap-set map (concat combobulate-key-prefix \" e\") envelope-map)" treesitSource;
-          message = "Envelope prefixes use Tessera's configured Combobulate prefix";
-        }
-        {
-          assertion = lib.hasInfix "(keymap-unset map \"C-c o\" t)" treesitSource;
-          message = "Combobulate's default envelope prefix is removed";
-        }
-        {
-          assertion = lib.hasInfix "(advice-add 'combobulate-define-envelope :after" treesitSource;
-          message = "Generated envelope commands have which-key descriptions";
-        }
-        {
-          assertion = lib.hasInfix "combobulate-tsx-highlight-queries-default nil" treesitSource;
-          message = "Incompatible optional TSX highlighting is disabled";
-        }
-        {
-          assertion = lib.hasInfix "(require 'tessera-combobulate-json5)" treesitSource;
-          message = "treesit loads the JSON5 extension";
-        }
-        {
-          assertion = lib.hasInfix ":name json5" json5CombobulateSource;
-          message = "The JSON5 package registers its Combobulate language";
-        }
-        {
-          assertion = lib.hasInfix "(require 'tessera-combobulate-nix)" treesitSource;
-          message = "treesit loads the Nix extension";
-        }
-        {
-          assertion = lib.hasInfix ":name nix" nixCombobulateSource;
-          message = "The Nix package registers its Combobulate language";
-        }
-        {
-          assertion = lib.hasInfix "(add-hook 'js-ts-mode-hook #'combobulate-mode)" javascriptSource;
-          message = "JavaScript enables Combobulate";
-        }
-        {
-          assertion = lib.hasInfix "(add-hook 'typescript-ts-base-mode-hook #'combobulate-mode)" javascriptSource;
-          message = "TypeScript and TSX enable Combobulate";
-        }
-        {
-          assertion = lib.hasInfix "(add-hook 'json-ts-mode-hook #'combobulate-mode)" jsonSource;
-          message = "JSON enables Combobulate";
-        }
-        {
-          assertion = lib.hasInfix "(add-hook 'nix-ts-mode-hook #'combobulate-mode)" nixSource;
-          message = "Nix enables Combobulate";
-        }
-        {
-          assertion = lib.hasInfix "(add-hook 'json5-ts-mode-hook #'combobulate-mode)" jsonSource;
-          message = "JSON5 enables Combobulate";
-        }
-        {
-          assertion = lib.hasInfix "(keymap-set eglot-mode-map \"M-d\" #'tessera-eglot-next-doc)" eglotSource;
-          message = "Eglot documentation navigation leaves M-n to Combobulate";
-        }
-      ];
+    script = # elisp
+      ''
+        (setq treesit-auto-install-grammar 'never)
+        (require 'tessera-keymaps)
+        (require 'tessera-treesit)
+        (require 'which-key)
+        (require 'eglot)
+
+        (defun tessera-test-raw-binding (map key)
+          (let ((events (listify-key-sequence (kbd key))))
+            (while (cdr events)
+              (setq map (lookup-key map (vector (car events))))
+              (setq events (cdr events))
+              (unless (keymapp map)
+                (error "Missing prefix in %s" key)))
+            (let ((event (car events)) result)
+              (map-keymap (lambda (k binding)
+                            (when (equal k event) (setq result binding)))
+                          map)
+              result)))
+
+        (defun tessera-test-check-map (map expected-count)
+          (let ((count 0))
+            (map-keymap
+             (lambda (key binding)
+               (setq count (1+ count))
+               (unless (and (consp binding)
+                            (stringp (car binding))
+                            (or (commandp (cdr binding)) (keymapp (cdr binding))))
+                 (error "Undescribed binding %s: %S" key binding)))
+             map)
+            (unless (= count expected-count)
+              (error "Expected %d bindings, found %d" expected-count count))))
+
+        (defun tessera-test-mode (mode language text)
+          (with-temp-buffer
+            (insert text)
+            (funcall mode)
+            (unless (symbol-value (combobulate-get 'minor-mode language))
+              (error "Combobulate did not activate in %s" mode))
+            (unless (eq (combobulate-primary-language) language)
+              (error "Wrong Combobulate language in %s" mode))))
+
+        (unless (equal combobulate-key-prefix "C-c c o")
+          (error "Wrong Combobulate prefix: %s" combobulate-key-prefix))
+        (unless (featurep 'tessera-combobulate-json5)
+          (error "JSON5 support was not loaded"))
+        (unless (featurep 'tessera-combobulate-nix)
+          (error "Nix support was not loaded"))
+        (unless (and (null combobulate-javascript-highlight-queries-default)
+                     (null combobulate-typescript-highlight-queries-default)
+                     (null combobulate-tsx-highlight-queries-default))
+          (error "Incompatible highlighting queries are enabled"))
+
+        (tessera-test-check-map combobulate-options-key-map 6)
+        (tessera-test-check-map combobulate-cursor-edit-key-map 5)
+        (tessera-test-check-map combobulate-xref-key-map 1)
+        (tessera-test-check-map combobulate-highlight-key-map 3)
+        (tessera-test-check-map combobulate-query-key-map 3)
+
+        (dolist (registration combobulate-registered-languages-alist)
+          (let* ((language (car registration))
+                 (map (symbol-value (combobulate-get 'map language)))
+                 (bindings (which-key--get-keymap-bindings map nil (kbd "C-c c"))))
+            (when (lookup-key map (kbd "C-c o"))
+              (error "Default Combobulate prefix remains for %s" language))
+            (unless (equal (cdr (assoc "C-c c o" bindings)) "group:combobulate")
+              (error "Wrong prefix description for %s: %S" language bindings))
+            (if (combobulate-read envelope-list language)
+                (unless (keymapp (lookup-key map (kbd "C-c c o e")))
+                  (error "Envelope prefix missing for %s" language))
+              (when (lookup-key map (kbd "C-c c o e"))
+                (error "Empty envelope prefix remains for %s" language)))))
+
+        (let ((combobulate-flash-node nil))
+          (tessera-test-mode 'js-ts-mode 'javascript "const value = 1;")
+          (tessera-test-mode 'typescript-ts-mode 'typescript "const value = 1;")
+          (tessera-test-mode 'tsx-ts-mode 'tsx "const value = <div />;")
+          (tessera-test-mode 'json-ts-mode 'json "{\"value\": 1}")
+          (tessera-test-mode 'json5-ts-mode 'json5 "{value: 1}")
+          (tessera-test-mode 'nix-ts-mode 'nix "{ value = 1; }")
+
+          (with-temp-buffer
+            (insert "{first: 1}")
+            (json5-ts-mode)
+            (dolist (key '("a" "o" "("))
+              (let ((binding (tessera-test-raw-binding combobulate-json5-envelope-map key)))
+                (unless (and (consp binding)
+                             (stringp (car binding))
+                             (commandp (cdr binding)))
+                  (error "Undescribed JSON5 envelope %s: %S" key binding))))))
+
+        (unless (eq (lookup-key eglot-mode-map (kbd "C-c c d"))
+                    'tessera-eglot-next-doc)
+          (error "C-c c d does not show the next documentation"))
+        (when (lookup-key eglot-mode-map (kbd "M-d"))
+          (error "Eglot still overrides kill-word"))
+
+        (princ "Treesit and Eglot behavior is correct\n")
+      '';
   };
 
   without-languages = check {
-    platform = "darwin";
+    platform = platform;
     features = {
       emacs.enable = true;
       emacs.treesit.enable = true;
     };
     assertions =
       { home, ... }:
-      let
-        treesitSource = source home "tessera-treesit";
-      in
       [
         {
           assertion = lib.any (p: p.pname or "" == "combobulate") (packages home);
@@ -214,17 +175,11 @@ lib.mapAttrs' (
             !(lib.any (p: lib.elem (p.pname or "") (lib.attrValues languageExtensions)) (packages home));
           message = "No Combobulate extensions are installed without language features";
         }
-        {
-          assertion = lib.all (extension: !(lib.hasInfix "(require '${extension})" treesitSource)) (
-            lib.attrValues languageExtensions
-          );
-          message = "No Combobulate extensions are loaded without language features";
-        }
       ];
   };
 
-  without-keymaps = check {
-    platform = "darwin";
+  without-keymaps = emacsCheck {
+    platform = platform;
     features = {
       emacs.enable = true;
       emacs.keymaps.enable = false;
@@ -232,41 +187,29 @@ lib.mapAttrs' (
       json.enable = true;
       nix.enable = true;
     };
-    assertions =
-      { home, ... }:
-      let
-        treesitSource = source home "tessera-treesit";
-      in
-      [
-        {
-          assertion = !(lib.any (p: p.pname or "" == "tessera-keymaps") (packages home));
-          message = "Treesit does not install the keymaps package";
-        }
-        {
-          assertion = !(lib.hasInfix "tessera-keymaps-describe-key" treesitSource);
-          message = "Treesit does not call the keymaps helper when keymaps are disabled";
-        }
-        {
-          assertion = !(lib.hasInfix "tessera-combobulate--describe-envelope" treesitSource);
-          message = "Treesit does not install envelope descriptions when keymaps are disabled";
-        }
-        {
-          assertion = lib.hasInfix "(setq combobulate-key-prefix \"C-c c o\")" treesitSource;
-          message = "Combobulate keeps its command prefix when keymaps are disabled";
-        }
-        {
-          assertion = lib.hasInfix "(keymap-set map (concat combobulate-key-prefix \" e\") envelope-map)" treesitSource;
-          message = "Envelope prefixes use Tessera's prefix without keymaps";
-        }
-        {
-          assertion = lib.hasInfix "(keymap-unset map \"C-c o\" t)" treesitSource;
-          message = "Combobulate's default envelope prefix is removed without keymaps";
-        }
-      ];
+    script = # elisp
+      ''
+        (require 'tessera-treesit)
+        (when (featurep 'tessera-keymaps)
+          (error "Treesit loaded keymaps even though they are disabled"))
+        (when (fboundp 'tessera-combobulate--describe-envelope)
+          (error "Treesit installed descriptions without keymaps"))
+        (dolist (registration combobulate-registered-languages-alist)
+          (let* ((language (car registration))
+                 (map (symbol-value (combobulate-get 'map language))))
+            (when (lookup-key map (kbd "C-c o"))
+              (error "Default Combobulate prefix remains for %s" language))
+            (if (combobulate-read envelope-list language)
+                (unless (keymapp (lookup-key map (kbd "C-c c o e")))
+                  (error "Envelope prefix missing for %s" language))
+              (when (lookup-key map (kbd "C-c c o e"))
+                (error "Empty envelope prefix remains for %s" language)))))
+        (princ "Treesit works without keymaps\n")
+      '';
   };
 
   disabled = check {
-    platform = "darwin";
+    platform = platform;
     features = {
       emacs.enable = true;
       javascript.enable = true;
@@ -280,23 +223,11 @@ lib.mapAttrs' (
           assertion = !(lib.any (p: p.pname or "" == "combobulate") (packages home));
           message = "Combobulate is only installed with the treesit feature";
         }
-        {
-          assertion = !(lib.hasInfix "combobulate-mode" (source home "tessera-javascript"));
-          message = "JavaScript only enables Combobulate with the treesit feature";
-        }
-        {
-          assertion = !(lib.hasInfix "combobulate-mode" (source home "tessera-json"));
-          message = "JSON and JSON5 only enable Combobulate with the treesit feature";
-        }
-        {
-          assertion = !(lib.hasInfix "combobulate-mode" (source home "tessera-nix"));
-          message = "Nix only enables Combobulate with the treesit feature";
-        }
       ];
   };
 
   without-tree-sitter = expect {
-    platform = "darwin";
+    platform = platform;
     features =
       { pkgs, ... }:
       {

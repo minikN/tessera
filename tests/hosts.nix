@@ -12,7 +12,7 @@
 ## all hosts are evaluated as standalone home-manager configurations too.
 ## Failed assertions and warnings fail the check. `frameworkChecks` check the
 ## assertions `mkFeature` gives every feature. `features/` has the
-## feature-specific checks, made with `expect` and `check`.
+## feature-specific checks, made with `expect`, `check` and `emacsCheck`.
 let
   globals = {
     user = "user";
@@ -118,12 +118,16 @@ let
   expect =
     {
       platform,
-      features,
       messages,
-    }:
+      ...
+    }@spec:
     name:
     let
-      inherit ((mkHost platform { inherit features; }).systemConfig.config) assertions warnings;
+      host = removeAttrs spec [
+        "platform"
+        "messages"
+      ];
+      inherit ((mkHost platform host).systemConfig.config) assertions warnings;
       failed =
         a:
         builtins.tryEval a.assertion == {
@@ -175,6 +179,44 @@ let
         test host ${name}:
         ${lib.concatMapStrings (p: "  - ${p}\n") problems}'';
 
+  ## A check named `name` that builds the host's final Emacs package and runs
+  ## `script` in a fresh batch Emacs with the generated configuration.
+  emacsCheck =
+    {
+      platform,
+      script,
+      ...
+    }@spec:
+    name:
+    let
+      host = mkHost platform (
+        removeAttrs spec [
+          "platform"
+          "script"
+        ]
+      );
+      inherit (host.homeConfig) config;
+      emacs = config.programs.emacs.finalPackage;
+      problems = problemsOf host.systemConfig.config ++ problemsOf config;
+      testFile =
+        pkgs.writeText "${name}.el" # elisp
+          ''
+            ;;; ${name}.el --- Behavioral Emacs check -*- lexical-binding: t; -*-
+            ${script}
+          '';
+    in
+    if problems == [ ] then
+      pkgs.runCommandLocal "test-${name}" { } # bash
+        ''
+          export HOME=$TMPDIR
+          PATH=/bin ${emacs}/bin/emacs --batch --eval '(package-activate-all)' -l default -l ${testFile}
+          touch $out
+        ''
+    else
+      throw ''
+        test host ${name}:
+        ${lib.concatMapStrings (p: "  - ${p}\n") problems}'';
+
   ## Assertions of every feature, with sway and aerospace as examples
   frameworkChecks = {
     parent-disabled = expect {
@@ -192,6 +234,17 @@ let
       features.aerospace.enable = true;
       messages = [ "features.aerospace is not available on NixOS." ];
     };
+    home-only-without-home-manager = expect {
+      platform = "nixos";
+      homeManager = false;
+      features.ghostty.enable = true;
+      messages = [
+        "features.ghostty requires Home Manager; set homeManager = true or disable the feature."
+      ];
+    };
+  };
+
+  evalChecks = {
     server-without-home-manager =
       name:
       let
@@ -201,17 +254,33 @@ let
           name = "test";
           host = lib.recursiveUpdate platforms.nixos.host {
             homeManager = false;
-            features = {
-              home.enable = false;
-              user.enable = false;
-            };
+            features.home.enable = false;
             nixos.system.stateVersion = "26.05";
           };
         };
       in
       assert host.homeConfig == null;
       assert !(host.systemConfig.config ? home-manager);
+      assert !(host.systemConfig.config.users.users ? user);
       evalCheck name (partsOf host false);
+
+    missing-globals =
+      name:
+      let
+        host = tessera.mkHost {
+          inherit inputs;
+          inherit (tessera) features;
+          name = "test";
+          host = lib.recursiveUpdate platforms.nixos.host {
+            nixos.system.stateVersion = "26.05";
+          };
+        };
+        fails = value: !(builtins.tryEval value).success;
+      in
+      if fails host.systemConfig.config.home-manager.users && fails host.homeConfig then
+        pkgs.runCommandLocal "test-${name}" { } "touch $out"
+      else
+        throw "test ${name}: expected missing globals.user to fail evaluation";
   };
 
   perPlatform =
@@ -263,11 +332,12 @@ let
     );
 in
 {
-  inherit expect check;
+  inherit expect check emacsCheck;
   checks =
     perPlatform "nixos"
     // perPlatform "darwin"
     // lib.mapAttrs' (
       name: check: lib.nameValuePair "expect-${name}" (check "expect-${name}")
-    ) frameworkChecks;
+    ) frameworkChecks
+    // lib.mapAttrs (name: check: check name) evalChecks;
 }
