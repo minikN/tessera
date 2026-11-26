@@ -20,7 +20,7 @@ mkElispPackage pkgs emacsPackages {
 
       (require 'combobulate)
 
-      (defconst combobulate-rules-json5
+      (defconst tessera-combobulate-rules-json5
         '(("array" (:*unnamed* ("array" "object" "string" "number" "true" "false" "null")))
           ("comment" (:*unnamed* nil))
           ("false" (:*unnamed* nil))
@@ -35,7 +35,7 @@ mkElispPackage pkgs emacsPackages {
           ("string" (:*unnamed* nil))
           ("true" (:*unnamed* nil))))
 
-      (defconst combobulate-rules-json5-inverse
+      (defconst tessera-combobulate-rules-json5-inverse
         '(("array" ("array" "file" "member"))
           ("false" ("array" "file" "member"))
           ("identifier" ("member"))
@@ -46,18 +46,18 @@ mkElispPackage pkgs emacsPackages {
           ("string" ("array" "file" "member"))
           ("true" ("array" "file" "member"))))
 
-      (defconst combobulate-rules-json5-types
+      (defconst tessera-combobulate-rules-json5-types
         '("array" "comment" "false" "file" "identifier" "member"
           "null" "number" "object" "string" "true"))
 
-      (defconst combobulate-rules-json5-supertypes nil)
+      (defconst tessera-combobulate-rules-json5-supertypes nil)
 
-      (push (list 'json5 combobulate-rules-json5) combobulate-rules-alist)
-      (push (list 'json5 combobulate-rules-json5-inverse) combobulate-rules-inverse-alist)
-      (push (list 'json5 combobulate-rules-json5-types) combobulate-rules-types-alist)
-      (push (list 'json5 combobulate-rules-json5-supertypes) combobulate-rules-supertypes-alist)
+      (push (list 'json5 tessera-combobulate-rules-json5) combobulate-rules-alist)
+      (push (list 'json5 tessera-combobulate-rules-json5-inverse) combobulate-rules-inverse-alist)
+      (push (list 'json5 tessera-combobulate-rules-json5-types) combobulate-rules-types-alist)
+      (push (list 'json5 tessera-combobulate-rules-json5-supertypes) combobulate-rules-supertypes-alist)
 
-      (defun combobulate-json5-pretty-print-node-name (node default-name)
+      (defun tessera-combobulate-json5-pretty-print-node-name (node default-name)
         "Pretty print NODE's name for JSON5, falling back to DEFAULT-NAME."
         (pcase (combobulate-node-type node)
           ("member" (combobulate-node-text
@@ -66,7 +66,7 @@ mkElispPackage pkgs emacsPackages {
           (_ default-name)))
 
       (eval-and-compile
-        (defvar combobulate-json5-definitions
+        (defvar tessera-combobulate-json5-definitions
           '((context-nodes
              '("string" "identifier" "number" "null" "true" "false"))
             (envelope-list
@@ -86,7 +86,7 @@ mkElispPackage pkgs emacsPackages {
                 :name "nest-array"
                 :template
                 ("[" r> "]"))))
-            (pretty-print-node-name-function #'combobulate-json5-pretty-print-node-name)
+            (pretty-print-node-name-function #'tessera-combobulate-json5-pretty-print-node-name)
             (procedures-edit
              `((:activation-nodes
                 ((:nodes
@@ -139,6 +139,6 @@ mkElispPackage pkgs emacsPackages {
       (define-combobulate-language
        :name json5
        :major-modes (json5-ts-mode)
-       :custom combobulate-json5-definitions)
+       :custom tessera-combobulate-json5-definitions)
     '';
 }

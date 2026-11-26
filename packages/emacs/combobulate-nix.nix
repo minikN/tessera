@@ -21,7 +21,7 @@ mkElispPackage pkgs emacsPackages {
       (require 'combobulate)
       (require 'seq)
 
-      (defun combobulate-nix--invert-production-rules (rules)
+      (defun tessera-combobulate-nix--invert-production-rules (rules)
         "Return the inverse of production RULES."
         (let ((inverse (make-hash-table :test #'equal))
               result)
@@ -34,7 +34,7 @@ mkElispPackage pkgs emacsPackages {
                    inverse)
           result))
 
-      (defconst combobulate-rules-nix
+      (defconst tessera-combobulate-rules-nix
         '(("_expression"
            (:*unnamed* ("apply_expression" "assert_expression" "attrset_expression"
                         "binary_expression" "float_expression" "function_expression"
@@ -106,7 +106,7 @@ mkElispPackage pkgs emacsPackages {
           ("with_expression"
            (:*unnamed* nil :environment ("_expression") :body ("_expression")))))
 
-      (defconst combobulate-rules-nix-types
+      (defconst tessera-combobulate-rules-nix-types
         '("_expression" "apply_expression" "assert_expression" "attrpath"
           "attrset_expression" "binary_expression" "binding" "binding_set"
           "comment" "dollar_escape" "ellipses" "escape_sequence" "float_expression"
@@ -119,15 +119,15 @@ mkElispPackage pkgs emacsPackages {
           "spath_expression" "string_expression" "string_fragment"
           "unary_expression" "uri_expression" "variable_expression" "with_expression"))
 
-      (defconst combobulate-rules-nix-supertypes '("_expression"))
+      (defconst tessera-combobulate-rules-nix-supertypes '("_expression"))
 
-      (push (list 'nix combobulate-rules-nix) combobulate-rules-alist)
-      (push (list 'nix (combobulate-nix--invert-production-rules combobulate-rules-nix))
+      (push (list 'nix tessera-combobulate-rules-nix) combobulate-rules-alist)
+      (push (list 'nix (tessera-combobulate-nix--invert-production-rules tessera-combobulate-rules-nix))
             combobulate-rules-inverse-alist)
-      (push (list 'nix combobulate-rules-nix-types) combobulate-rules-types-alist)
-      (push (list 'nix combobulate-rules-nix-supertypes) combobulate-rules-supertypes-alist)
+      (push (list 'nix tessera-combobulate-rules-nix-types) combobulate-rules-types-alist)
+      (push (list 'nix tessera-combobulate-rules-nix-supertypes) combobulate-rules-supertypes-alist)
 
-      (defun combobulate-nix-pretty-print-node-name (node default-name)
+      (defun tessera-combobulate-nix-pretty-print-node-name (node default-name)
         "Pretty print NODE's name for Nix, falling back to DEFAULT-NAME."
         (combobulate-string-truncate
          (pcase (combobulate-node-type node)
@@ -139,12 +139,12 @@ mkElispPackage pkgs emacsPackages {
          40))
 
       (eval-and-compile
-        (defvar combobulate-nix-definitions
+        (defvar tessera-combobulate-nix-definitions
           '((context-nodes
              '("identifier" "string_fragment" "path_fragment"
                "integer_expression" "float_expression" "uri_expression"))
             (envelope-list nil)
-            (pretty-print-node-name-function #'combobulate-nix-pretty-print-node-name)
+            (pretty-print-node-name-function #'tessera-combobulate-nix-pretty-print-node-name)
             (procedures-edit
              `((:activation-nodes
                 ((:nodes
@@ -215,6 +215,6 @@ mkElispPackage pkgs emacsPackages {
       (define-combobulate-language
        :name nix
        :major-modes (nix-ts-mode)
-       :custom combobulate-nix-definitions)
+       :custom tessera-combobulate-nix-definitions)
     '';
 }

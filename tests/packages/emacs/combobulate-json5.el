@@ -42,20 +42,20 @@
   (combobulate-json5-test--with-buffer
       "{first: 1, \"second\": \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\"}"
     (combobulate-json5-test--goto "first")
-    (should (equal (combobulate-json5-pretty-print-node-name
+    (should (equal (tessera-combobulate-json5-pretty-print-node-name
                     (combobulate-json5-test--node '("member")) "fallback")
                    "first"))
     (combobulate-json5-test--goto "\"second\"")
-    (should (equal (combobulate-json5-pretty-print-node-name
+    (should (equal (tessera-combobulate-json5-pretty-print-node-name
                     (combobulate-json5-test--node '("member")) "fallback")
                    "\"second\""))
     (combobulate-json5-test--goto "abcdefghijklmnopqrstuvwxyz")
     (let* ((node (combobulate-json5-test--node '("string")))
            (text (combobulate-node-text node)))
-      (should (equal (combobulate-json5-pretty-print-node-name node "fallback")
+      (should (equal (tessera-combobulate-json5-pretty-print-node-name node "fallback")
                      (concat (substring text 0 40) " … "))))
     (combobulate-json5-test--goto "1")
-    (should (equal (combobulate-json5-pretty-print-node-name
+    (should (equal (tessera-combobulate-json5-pretty-print-node-name
                     (combobulate-json5-test--node) "fallback")
                    "fallback"))))
 

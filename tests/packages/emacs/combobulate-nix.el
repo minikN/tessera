@@ -44,25 +44,25 @@
     (should (member "binding_set" (combobulate-production-rules-get-inverted "binding")))
     (should (member "formal" (combobulate-production-rules-get-inverted "identifier")))
     (should-not (seq-difference (combobulate-production-rules-get-types)
-                                combobulate-rules-nix-types))))
+                                tessera-combobulate-rules-nix-types))))
 
 (ert-deftest combobulate-nix-test-pretty-print-node-name ()
   (combobulate-nix-test--with-buffer
       "{ foo.bar = \"value\"; indented = ''text''; fallback = 1; }"
     (combobulate-nix-test--goto "foo.bar")
-    (should (equal (combobulate-nix-pretty-print-node-name
+    (should (equal (tessera-combobulate-nix-pretty-print-node-name
                     (combobulate-nix-test--node '("binding")) "fallback")
                    "foo.bar"))
     (combobulate-nix-test--goto "\"value\"")
-    (should (equal (combobulate-nix-pretty-print-node-name
+    (should (equal (tessera-combobulate-nix-pretty-print-node-name
                     (combobulate-nix-test--node '("string_expression")) "fallback")
                    "\"value\""))
     (combobulate-nix-test--goto "''text''")
-    (should (equal (combobulate-nix-pretty-print-node-name
+    (should (equal (tessera-combobulate-nix-pretty-print-node-name
                     (combobulate-nix-test--node '("indented_string_expression")) "fallback")
                    "''text''"))
     (combobulate-nix-test--goto "1")
-    (should (equal (combobulate-nix-pretty-print-node-name
+    (should (equal (tessera-combobulate-nix-pretty-print-node-name
                     (combobulate-nix-test--node) "fallback")
                    "fallback"))))
 
