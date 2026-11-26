@@ -41,8 +41,8 @@ mkFeature {
 
       - the grammars come with this feature, so Emacs never asks to install
         them
-      - `features.emacs.treesit` enables Combobulate in JSON tree-sitter
-        buffers; Combobulate does not support JSON5
+      - `features.emacs.treesit` enables Combobulate in JSON and JSON5
+        tree-sitter buffers
       - Eglot starts the language server when the emacs.eglot feature is
         enabled; in JSON5 files that is oxfmt's
       - it supports the following formatters: `biome` and `oxfmt`. If the
@@ -182,9 +182,10 @@ mkFeature {
                         (if (eq treesit-enabled-modes t)
                             t
                           (seq-union treesit-enabled-modes '(json-ts-mode))))
-                ${lib.optionalString config.features.emacs.treesit.enable ''
+                ${lib.optionalString (treesit && config.features.emacs.treesit.enable) ''
                   (declare-function combobulate-mode "combobulate")
                   (add-hook 'json-ts-mode-hook #'combobulate-mode)
+                  (add-hook 'json5-ts-mode-hook #'combobulate-mode)
                 ''}
               ''}
               ${lib.optionalString config.features.emacs.eglot.enable ''

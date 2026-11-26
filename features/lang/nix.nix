@@ -24,6 +24,7 @@ mkFeature {
 
       - `nix-ts-mode` provides syntax highlighting and indentation. Its grammar
         comes with this feature, so Emacs never asks to install it
+      - `features.emacs.treesit` enables Combobulate in Nix tree-sitter buffers
       - Eglot starts nil when the emacs.eglot feature is enabled. Formatting
         uses nixfmt
       - polymode gives indented strings tagged with a language their own major
@@ -107,6 +108,10 @@ mkFeature {
 
               (add-to-list 'auto-mode-alist '("\\.nix\\'" . tessera-nix-polymode))
 
+              ${lib.optionalString (treesit && config.features.emacs.treesit.enable) ''
+                (declare-function combobulate-mode "combobulate")
+                (add-hook 'nix-ts-mode-hook #'combobulate-mode)
+              ''}
               ${lib.optionalString config.features.emacs.eglot.enable ''
                 (defun tessera-nix--workspace-configuration (_server)
                   "Return nil's settings, including the nixfmt executable."
