@@ -112,7 +112,7 @@ mkFeature {
 
             (defun tessera-keymaps-describe-key (map key description)
               "Add which-key DESCRIPTION to KEY's existing binding in MAP."
-              (let ((binding (lookup-key map (kbd key))))
+              (let ((binding (keymap-lookup map key nil t)))
                 (unless binding
                   (error "No binding for key `%s'" key))
                 (keymap-set map key (cons description binding))))
