@@ -128,6 +128,8 @@ Feature-specific tests go in `tests/features/<category>/<feature>.nix`, mirrorin
 - `expect` for required assertion or warning messages;
 - `check` for a cleanly evaluating host plus custom assertions about system and home configuration.
 
+Each feature check declares its `platform`. Discovery includes it only when that platform matches the current flake system, so Linux jobs do not evaluate Darwin-only feature checks and macOS jobs do not evaluate NixOS-only feature checks.
+
 Emacs package tests have two parts: an ERT file `tests/packages/emacs/<name>.el` and explicit registration in `tests/packages/emacs/default.nix`, which also byte-compiles the package. Unlike feature tests, ERT registration is not automatic.
 
 For focused validation, list check names and build only relevant ones:
