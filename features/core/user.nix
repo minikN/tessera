@@ -10,8 +10,11 @@ mkFeature {
   doc = {
     summary = "The user account the configuration is for";
     description = ''
-      Describes the user the configuration is for. It is enabled by default.
-      `username`, `fullName` and `email` are globally set by you (`globals` in `mkFlake`).
+      Describes the user the configuration is for. It is enabled by default
+      when `globals.user` is supplied. Home Manager requires `globals.user`;
+      a system-only host without it disables this feature by default instead
+      of creating a fallback account. `username`, `fullName` and `email` are
+      globally set by you (`globals` in `mkFlake`).
 
       - Sets the users `homeDirectory`
 
