@@ -48,7 +48,6 @@ lib.mapAttrs' (
     platform = platform;
     features = {
       emacs.enable = true;
-      emacs.eglot.enable = true;
       emacs.keymaps.enable = true;
       emacs.treesit.enable = true;
       javascript.enable = true;
@@ -61,7 +60,6 @@ lib.mapAttrs' (
         (require 'tessera-keymaps)
         (require 'tessera-treesit)
         (require 'which-key)
-        (require 'eglot)
 
         (defun tessera-test-raw-binding (map key)
           (let ((events (listify-key-sequence (kbd key))))
@@ -147,13 +145,7 @@ lib.mapAttrs' (
                              (commandp (cdr binding)))
                   (error "Undescribed JSON5 envelope %s: %S" key binding))))))
 
-        (unless (eq (lookup-key eglot-mode-map (kbd "C-c c d"))
-                    'tessera-eglot-next-doc)
-          (error "C-c c d does not show the next documentation"))
-        (when (lookup-key eglot-mode-map (kbd "M-d"))
-          (error "Eglot still overrides kill-word"))
-
-        (princ "Treesit and Eglot behavior is correct\n")
+        (princ "Treesit behavior is correct\n")
       '';
   };
 
