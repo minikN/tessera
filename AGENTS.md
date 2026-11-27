@@ -123,13 +123,26 @@ Documentation is generated from feature metadata and evaluated options. `mkDocs`
 
 These are evaluation checks, not full system builds. Failed assertions **and warnings** fail them. Consequently, a new feature must evaluate both alone and alongside every other supported feature. Only add to the `conflicting` list for a real, unavoidable feature conflict.
 
+`tests/hosts.nix` also builds `emacs-all`, the Emacs of the all-features host on the current system. It starts that Emacs and fails if any of tessera's keys lacks a which-key description: every key under `C-c` followed by a letter in the global map and every loaded mode map, every key below those, and every key in a `tessera-*` prefix keymap. A new Emacs feature is therefore started alongside all others and has its descriptions checked without a feature test.
+
 Feature-specific tests go in `tests/features/<category>/<feature>.nix`, mirroring the feature path. They are discovered automatically and use:
 
 - `expect` for required assertion or warning messages;
 - `check` for a cleanly evaluating host plus custom assertions about system and home configuration;
-- `emacsCheck` for building the host's final Emacs package and running a behavioral Elisp `script` against the generated configuration.
+- `emacsCheck` for building the host's final Emacs package and running a behavioral Elisp `script` in batch Emacs, started as Emacs starts: the generated `early-init.el`, the packages, the generated configuration, then the startup hooks.
 
 Use the `platform` argument passed to each feature test file for platform-neutral checks so they run on both Linux and macOS. Hard-code `platform = "nixos"` or `"darwin"` only for genuinely OS-specific checks. Discovery includes a check only when its declared platform matches the current flake system, so one OS never tries to realize the other's generated files. Prefer behavioral assertions over searching generated source for strings; package-selection assertions belong in `check`, while Emacs behavior belongs in `emacsCheck` or ERT.
+
+### Writing tests
+
+- Test behavior, not configuration. A check that a variable has the value the feature sets, or that a key is bound in the map the feature bound it in, restates the code and passes even when the behavior is broken. Drive the feature as a user would instead: open a buffer in the mode, press keys with `execute-kbd-macro`, and assert the resulting text, point, state or windows. Commands reading the minibuffer work this way too, in batch Emacs.
+- Where batch Emacs cannot show the effect (display, echo area, screen lines), check what a key runs with `key-binding` in a buffer with the relevant modes and state active, so shadowing by other keymaps is caught. Check a setting directly only as a last resort, with a comment saying why.
+- Exercise deferred configuration: load the library or open a buffer in the mode, so `with-eval-after-load` bodies and mode hooks run. Upstream packages (e.g. Evil Collection) often change settings only when a mode loads.
+- Test what can break: conditional logic, both sides of optional integrations (with and without the other feature), interactions between features, and fixed bugs as regression checks. Do not test a single unconditional setting or the behavior of upstream packages themselves.
+- Keep a check to one feature, in the test file of the feature implementing the behavior, and name it after that behavior. Do not repeat what `emacs-all` checks.
+- Use the cheapest check that can observe the behavior. `expect` and `check` only evaluate; every distinct feature set in an `emacsCheck` builds its own Emacs, so put a feature's behavioral checks that need the same features into one script.
+- Prefer public APIs to private (`--`) functions of upstream packages and to nixpkgs internals.
+- Make sure a new check fails without the change it tests.
 
 Emacs package tests have two parts: an ERT file `tests/packages/emacs/<name>.el` and explicit registration in `tests/packages/emacs/default.nix`, which also byte-compiles the package. Unlike feature tests, ERT registration is not automatic.
 
