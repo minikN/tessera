@@ -16,6 +16,7 @@ let
       tessera
       inputs
       ;
+    currentPlatform = platform;
   };
 in
 hosts.checks
