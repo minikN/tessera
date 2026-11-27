@@ -155,7 +155,19 @@ mkFeature {
                              (combobulate-query-key-map
                               ("q" . "open query builder")
                               ("p" . "build match query for node at point")
-                              ("r" . "build query from root to point"))))
+                              ("r" . "build query from root to point"))
+                             (combobulate-query-mode-map
+                              ("C-c ${keys.code}" . "code")
+                              ("C-c ${keys.code} o" . "open command menu")
+                              ("C-c b" . "install into buffer")
+                              ("C-c d" . "add directory local variable")
+                              ("C-c e" . "edit nodes")
+                              ("C-c f" . "add file local variable")
+                              ("C-c h" . "copy node hierarchy")
+                              ("C-c n" . "copy and match node")
+                              ("C-c p" . "change parser")
+                              ("C-c q" . "save and quit")
+                              ("C-c x" . "find in xref"))))
                     (dolist (description (cdr map-descriptions))
                       (tessera-keymaps-describe-key
                        (symbol-value (car map-descriptions))
@@ -165,11 +177,13 @@ mkFeature {
                   (dolist (registration combobulate-registered-languages-alist)
                     (let* ((language (car registration))
                            (map (symbol-value (combobulate-get 'map language))))
+                      (tessera-keymaps-describe-key map "C-c ${keys.code}" "code")
                       (tessera-keymaps-describe-key map combobulate-key-prefix "combobulate")
                       (when (combobulate-read envelope-list language)
                         (tessera-keymaps-describe-key
                          map (concat combobulate-key-prefix " e") "envelop"))))
 
+                  (tessera-keymaps-describe-key combobulate-key-map "C-c ${keys.code}" "code")
                   (tessera-keymaps-describe-key
                    combobulate-key-map combobulate-key-prefix "combobulate"))
               ''}
