@@ -3,6 +3,7 @@
   pkgs,
   tessera,
   inputs,
+  currentPlatform,
 }:
 
 ## Evaluates hosts built from tessera's features alone, without building them:
@@ -11,8 +12,10 @@
 ## off by default turned on, each on NixOS and macOS. The bare and
 ## all hosts are evaluated as standalone home-manager configurations too.
 ## Failed assertions and warnings fail the check. `frameworkChecks` check the
-## assertions `mkFeature` gives every feature. `features/` has the
-## feature-specific checks, made with `expect`, `check` and `emacsCheck`.
+## assertions `mkFeature` gives every feature. `emacs-all` builds and starts
+## the Emacs of the host with all features on `currentPlatform`. `features/`
+## has the feature-specific checks, made with `expect`, `check` and
+## `emacsCheck`.
 let
   globals = {
     user = "user";
@@ -283,12 +286,18 @@ let
         throw "test ${name}: expected missing globals.user to fail evaluation";
   };
 
-  perPlatform =
+  ## Features `platform` supports
+  supportedOn = platform: builtins.filter (supports platform) tessera.features;
+
+  ## The host with the features `platform` supports, but for the
+  ## `conflicting` ones, and all their boolean options that are off by default
+  allHost =
     platform:
     let
-      supported = builtins.filter (supports platform) tessera.features;
       enabled = lib.foldl' lib.recursiveUpdate { } (
-        map enableFeature (builtins.filter (f: !builtins.elem (nameOf f) conflicting) supported)
+        map enableFeature (
+          builtins.filter (f: !builtins.elem (nameOf f) conflicting) (supportedOn platform)
+        )
       );
       ## Whether the feature at `path` or one above it is in `enabled`
       isEnabled =
@@ -305,18 +314,21 @@ let
         )
         && isEnabled (lib.init (lib.tail o.loc))
       ) (lib.collect lib.isOption bare.${platform}.systemConfig.options.features);
-      all = lib.foldl' lib.recursiveUpdate enabled (
+    in
+    {
+      features = lib.foldl' lib.recursiveUpdate enabled (
         map (o: lib.setAttrByPath (lib.tail o.loc) true) optIns
       );
-    in
+      ## A stand-in for `sway.useGlobalBar`, as tessera has no bar feature
+      home.globals.apps.bar = "bar";
+    };
+
+  perPlatform =
+    platform:
     {
       "host-${platform}-bare" = evalCheck "${platform}-bare" (partsOf bare.${platform} true);
       "host-${platform}-all" = evalCheck "${platform}-all" (
-        partsOf (mkHost platform {
-          features = all;
-          ## A stand-in for `sway.useGlobalBar`, as tessera has no bar feature
-          home.globals.apps.bar = "bar";
-        }) true
+        partsOf (mkHost platform (allHost platform)) true
       );
     }
     // lib.listToAttrs (
@@ -328,8 +340,78 @@ let
         lib.nameValuePair "host-${name}" (
           evalCheck name (partsOf (mkHost platform { features = enableFeature f; }) false)
         )
-      ) supported
+      ) (supportedOn platform)
     );
+
+  ## The Emacs of the host with all features starts, and each of tessera's
+  ## keys has a which-key description: every key under `C-c` followed by a
+  ## letter, the keys Emacs reserves for users, in the global map and the
+  ## keymaps of the loaded modes, every key below them, and every key in
+  ## tessera's own keymaps
+  emacsAll = emacsCheck (
+    allHost currentPlatform
+    // {
+      platform = currentPlatform;
+      script = # elisp
+        ''
+          (defvar tessera-test-walked nil
+            "Keymaps already checked.")
+          (defvar tessera-test-undescribed nil
+            "Keys without a description.")
+
+          (defun tessera-test-walk (map prefix &optional letters)
+            "Record the keys of MAP, written after PREFIX, without a description.
+          Check the keys below its prefix keys too.  With LETTERS, check only
+          the keys of MAP that are letters."
+            (unless (memq map tessera-test-walked)
+              (push map tessera-test-walked)
+              (map-keymap
+               (lambda (event binding)
+                 (when (and binding
+                            (not (eq binding 'undefined))
+                            (or (not letters)
+                                (and (characterp event)
+                                     (string-match-p "\\`[a-zA-Z]\\'" (string event)))))
+                   (let* ((key (concat prefix " " (if (consp event)
+                                                      (format "%S" event)
+                                                    (single-key-description event))))
+                          (definition
+                           (cond ((stringp (car-safe binding)) (cdr binding))
+                                 ((eq (car-safe binding) 'menu-item) (nth 2 binding))
+                                 (t (push key tessera-test-undescribed) binding))))
+                     (when (keymapp definition)
+                       (tessera-test-walk definition key)))))
+               map)))
+
+          (defun tessera-test-walk-mode-map (map)
+            "Check the keys of MAP under `C-c' followed by a letter."
+            (let ((prefix (keymap-lookup map "C-c")))
+              (when (keymapp prefix)
+                (tessera-test-walk prefix "C-c" t))))
+
+          (tessera-test-walk-mode-map global-map)
+          (pcase-dolist (`(,_ . ,map) minor-mode-map-alist)
+            (tessera-test-walk-mode-map map))
+          (mapatoms
+           (lambda (symbol)
+             (when (and (boundp symbol) (keymapp (symbol-value symbol)))
+               (let ((name (symbol-name symbol)))
+                 (cond ((string-suffix-p "mode-map" name)
+                        (tessera-test-walk-mode-map (symbol-value symbol)))
+                       ;; Prefix keymaps, including those of modes not loaded
+                       ;; yet; repeat-mode, not which-key, shows repeat maps
+                       ((and (string-prefix-p "tessera-" name)
+                             (not (string-suffix-p "-repeat-map" name)))
+                        (tessera-test-walk (symbol-value symbol) name)))))))
+
+          (when tessera-test-undescribed
+            (error "Keys without a which-key description:\n  %s"
+                   (string-join (sort (delete-dups tessera-test-undescribed) #'string<)
+                                "\n  ")))
+          (princ (format "Checked %d keymaps\n" (length tessera-test-walked)))
+        '';
+    }
+  ) "emacs-all";
 in
 {
   inherit expect check emacsCheck;
@@ -339,5 +421,8 @@ in
     // lib.mapAttrs' (
       name: check: lib.nameValuePair "expect-${name}" (check "expect-${name}")
     ) frameworkChecks
-    // lib.mapAttrs (name: check: check name) evalChecks;
+    // lib.mapAttrs (name: check: check name) evalChecks
+    // {
+      emacs-all = emacsAll;
+    };
 }
