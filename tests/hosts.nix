@@ -183,7 +183,9 @@ let
         ${lib.concatMapStrings (p: "  - ${p}\n") problems}'';
 
   ## A check named `name` that builds the host's final Emacs package and runs
-  ## `script` in a fresh batch Emacs with the generated configuration.
+  ## `script` in a fresh batch Emacs, started as Emacs starts: with the
+  ## generated early-init.el, the packages, the generated configuration and
+  ## the hooks run once it has loaded.
   emacsCheck =
     {
       platform,
@@ -212,7 +214,10 @@ let
       pkgs.runCommandLocal "test-${name}" { } # bash
         ''
           export HOME=$TMPDIR
-          PATH=/bin ${emacs}/bin/emacs --batch --eval '(package-activate-all)' -l default -l ${testFile}
+          PATH=/bin ${emacs}/bin/emacs --batch -l ${config.xdg.configFile."emacs/early-init.el".source} \
+            --eval '(package-activate-all)' -l default \
+            --eval '(run-hooks (quote after-init-hook) (quote emacs-startup-hook) (quote window-setup-hook))' \
+            -l ${testFile}
           touch $out
         ''
     else
